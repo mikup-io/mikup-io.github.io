@@ -1,0 +1,405 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Mikup — One grammar. Any resource. Any app.</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Caveat:wght@500;600;700&family=Patrick+Hand&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#000; --ink:#ecebe6; --ink-dim:#8f8e88; --accent:#f4d35e; --bar:rgba(24,24,24,.78); --bar-line:rgba(236,235,230,.16);
+    color-scheme:dark;
+    box-sizing:border-box;
+    padding-top:env(safe-area-inset-top,0px);
+    padding-bottom:env(safe-area-inset-bottom,0px);
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){ --bg:#000; --ink:#ecebe6; --ink-dim:#8f8e88; --accent:#f4d35e; --bar:rgba(24,24,24,.78); --bar-line:rgba(236,235,230,.16); }
+  }
+  :root[data-theme="dark"]{ --bg:#000; --ink:#ecebe6; --ink-dim:#8f8e88; --accent:#f4d35e; --bar:rgba(24,24,24,.78); --bar-line:rgba(236,235,230,.16); }
+  html{ scroll-padding-top:env(safe-area-inset-top,0px); height:100%; }
+  html,body{ margin:0; height:100%; }
+  *,*::before,*::after{ box-sizing:inherit; }
+  body{ background:var(--bg); color:var(--ink); font-family:"Patrick Hand","Comic Sans MS",cursive,sans-serif; overflow:hidden; }
+  #stage{ position:relative; width:100%; height:100%; background:var(--bg); }
+  #stage.nocursor{ cursor:none; }
+  svg#board{ width:100%; height:100%; display:block; }
+  #layer path{ fill:none; stroke-linecap:round; stroke-linejoin:round; }
+  #pencil{ transition:opacity .25s ease; pointer-events:none; }
+
+
+</style>
+</head>
+<body>
+<div id="stage">
+  <svg id="board" viewBox="0 0 1600 900" preserveAspectRatio="xMidYMid meet" aria-label="Animated Mikup sketchboard: the Resource">
+    <defs id="defs">
+      <filter id="pencilFx" filterUnits="userSpaceOnUse" x="0" y="0" width="1600" height="900">
+        <feTurbulence type="fractalNoise" baseFrequency="0.8" numOctaves="2" seed="4" result="warp"/>
+        <feDisplacementMap in="SourceGraphic" in2="warp" scale="2.4" xChannelSelector="R" yChannelSelector="G" result="wobbly"/>
+        <feTurbulence type="fractalNoise" baseFrequency="1.4" numOctaves="1" seed="9" result="grain"/>
+        <feColorMatrix in="grain" type="matrix" values="0 0 0 0 1  0 0 0 0 1  0 0 0 0 1  1.5 0 0 0 0.12" result="grainA"/>
+        <feComposite in="wobbly" in2="grainA" operator="in"/>
+      </filter>
+    </defs>
+    <rect width="1600" height="900" fill="#000"/>
+    <g id="layer"></g>
+    <g id="pencil" opacity="0">
+      <g transform="rotate(-52) scale(.95)">
+        <path d="M0 0 L26 -9 L26 9 Z" fill="#e3c39a"/>
+        <path d="M0 0 L9 -3.2 L9 3.2 Z" fill="#d9d9d9"/>
+        <rect x="26" y="-9" width="132" height="18" fill="#f2c94c"/>
+        <rect x="26" y="-2.5" width="132" height="2.5" fill="#cfa62a"/>
+        <rect x="158" y="-9.5" width="11" height="19" fill="#b9b9b9"/>
+        <rect x="169" y="-9" width="18" height="18" rx="4" fill="#e78f8f"/>
+      </g>
+    </g>
+  </svg>
+
+
+</div>
+
+<script>
+(() => {
+const NS = 'http://www.w3.org/2000/svg';
+const layer = document.getElementById('layer');
+const pencil = document.getElementById('pencil');
+const C = { chalk:'#ecebe6', dim:'#8f8e88', yel:'#f4d35e', cy:'#7fd3e6', red:'#ff7a6b', grn:'#9be38f' };
+const FONT = { h:'Caveat, "Patrick Hand", cursive', l:'"Patrick Hand", Caveat, cursive' };
+
+/* ---------- seeded randomness for the hand-drawn wobble ---------- */
+let _s = 1;
+const seed = n => { _s = n >>> 0; };
+function rnd(){ _s |= 0; _s = _s + 0x6D2B79F5 | 0; let t = Math.imul(_s ^ _s >>> 15, 1 | _s); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }
+const j = a => (rnd()*2 - 1) * a;
+const f = n => Math.round(n*10)/10;
+
+/* ---------- hand-drawn primitives ---------- */
+function seg(a, b, bow){
+  const dx=b[0]-a[0], dy=b[1]-a[1], len=Math.hypot(dx,dy)||1;
+  const k = j(bow*Math.min(1,len/150) + .5);
+  return ` Q${f((a[0]+b[0])/2 - dy/len*k)} ${f((a[1]+b[1])/2 + dx/len*k)} ${f(b[0])} ${f(b[1])}`;
+}
+function poly(pts, closed=false, bow=3){
+  pts = pts.map(p => [p[0]+j(1.2), p[1]+j(1.2)]);
+  let d = `M${f(pts[0][0])} ${f(pts[0][1])}`;
+  for(let i=1;i<pts.length;i++) d += seg(pts[i-1], pts[i], bow);
+  if(closed){
+    const a=pts[pts.length-1], s=pts[0], n=pts[1];
+    d += seg(a, s, bow);
+    d += ` L${f(s[0]+(n[0]-s[0])*.07+j(2))} ${f(s[1]+(n[1]-s[1])*.07+j(2))}`;
+  }
+  return d;
+}
+const line = (x1,y1,x2,y2,bow=3) => poly([[x1,y1],[x2,y2]], false, bow);
+const rect = (x,y,w,h,bow=3) => poly([[x,y],[x+w,y],[x+w,y+h],[x,y+h]], true, bow);
+function ell(cx,cy,rx,ry,a0=-Math.PI/2-.3,sweep=Math.PI*2+.4,wob=.03){
+  const n = Math.max(20, Math.round((rx+ry)*Math.abs(sweep)/9));
+  const ph = rnd()*6; let d='';
+  for(let i=0;i<=n;i++){
+    const a = a0 + sweep*i/n;
+    const r = 1 + wob*Math.sin(a*2+ph) + (i/n)*.02;
+    d += (i?' L':'M') + f(cx+Math.cos(a)*rx*r) + ' ' + f(cy+Math.sin(a)*ry*r);
+  }
+  return d;
+}
+function arrow(x1,y1,x2,y2,bow=5,hs=18){
+  const a = Math.atan2(y2-y1,x2-x1);
+  return [ line(x1,y1,x2,y2,bow),
+    `M${f(x2-hs*Math.cos(a-.45))} ${f(y2-hs*Math.sin(a-.45))} L${f(x2)} ${f(y2)} L${f(x2-hs*Math.cos(a+.45))} ${f(y2-hs*Math.sin(a+.45))}` ];
+}
+function cyl(x,y,w,h){ const rx=w/2, ry=Math.max(9,w*.16);
+  return [ ell(x+rx,y,rx,ry), line(x,y,x,y+h,1), line(x+w,y,x+w,y+h,1), ell(x+rx,y+h,rx,ry,0,Math.PI,.01), ell(x+rx,y+h*.5,rx,ry,.1,Math.PI-.2,.01) ]; }
+function doc(x,y,w,h){ const c=Math.min(26,w*.25);
+  return [ poly([[x,y],[x+w-c,y],[x+w,y+c],[x+w,y+h],[x,y+h]], true, 2), poly([[x+w-c,y],[x+w-c,y+c],[x+w,y+c]], false, 1) ]; }
+function monitor(x,y,w,h){ return [ rect(x,y,w,h,2), line(x+w/2,y+h,x+w/2,y+h+28,1), line(x+w/2-40,y+h+30,x+w/2+40,y+h+30,1) ]; }
+function phone(x,y,w,h){ return [ rect(x,y,w,h,2), line(x+w/2-12,y+h-14,x+w/2+12,y+h-14,.5) ]; }
+function gear(cx,cy,r,t=10){ const pts=[], n=t*4;
+  for(let i=0;i<n;i++){ const a=i/n*Math.PI*2, rr=(i%4<2)?r:r*.78; pts.push([cx+Math.cos(a)*rr, cy+Math.sin(a)*rr]); }
+  return [ poly(pts,true,.4), ell(cx,cy,r*.32,r*.32) ]; }
+function person(x,y,s=1){ return [ ell(x,y,18*s,18*s), line(x,y+19*s,x,y+92*s,2),
+  poly([[x-36*s,y+66*s],[x,y+42*s],[x+36*s,y+66*s]],false,2), poly([[x-30*s,y+150*s],[x,y+92*s],[x+30*s,y+150*s]],false,2) ]; }
+function bubble(x,y,w,h,tx,ty){ return [ ell(x+w/2,y+h/2,w/2,h/2), poly([[x+w*.28,y+h*.86],[tx,ty],[x+w*.42,y+h*.97]],false,1) ]; }
+function star4(cx,cy,r){ const q=()=>`${f(cx+j(r*.08))} ${f(cy+j(r*.08))}`;
+  return `M${f(cx)} ${f(cy-r)} Q${q()} ${f(cx+r)} ${f(cy)} Q${q()} ${f(cx)} ${f(cy+r)} Q${q()} ${f(cx-r)} ${f(cy)} Q${q()} ${f(cx)} ${f(cy-r)}`; }
+const check = (x,y,s) => poly([[x,y],[x+s*.35,y+s*.4],[x+s,y-s*.5]],false,1);
+function folder(x,y,w,h){ return poly([[x,y+14],[x,y],[x+w*.35,y],[x+w*.43,y+14],[x+w,y+14],[x+w,y+h],[x,y+h]],true,1.5); }
+function lock(cx,cy,s){ return [ ell(cx,cy,42*s,58*s,Math.PI,Math.PI,.005), rect(cx-62*s,cy,124*s,100*s,2), ell(cx,cy+40*s,10*s,10*s), line(cx,cy+50*s,cx,cy+72*s,.5) ]; }
+function globe(cx,cy,r){ return [ ell(cx,cy,r,r), ell(cx,cy,r*.42,r,-Math.PI/2,Math.PI*2+.2,.01), line(cx-r,cy,cx+r,cy,2),
+  line(cx-r*.86,cy-r*.5,cx+r*.86,cy-r*.5,2), line(cx-r*.86,cy+r*.5,cx+r*.86,cy+r*.5,2) ]; }
+function cube(x,y,s){ const d=s*.4, e=s*.35;
+  return [ rect(x,y,s,s,1.2), poly([[x,y],[x+d,y-e],[x+s+d,y-e],[x+s,y]],false,1), poly([[x+s+d,y-e],[x+s+d,y+s-e],[x+s,y+s]],false,1) ]; }
+function cloud(cx,cy,rx,ry){ const n=110; let d='';
+  for(let i=0;i<=n+5;i++){ const a=-Math.PI/2+i/n*Math.PI*2, r=.86+.2*Math.abs(Math.sin(a*3.5));
+    d += (i?' L':'M') + f(cx+Math.cos(a)*rx*r) + ' ' + f(cy+Math.sin(a)*ry*r); }
+  return d; }
+function scribble(x,y,w,h,n){ const pts=[]; for(let i=0;i<n;i++) pts.push([x+rnd()*w, y+rnd()*h]); return poly(pts,false,30); }
+
+/* ---------- scene builder ---------- */
+function B(){
+  const ops=[];
+  const b = {
+    ops,
+    p(d,c=C.chalk,w=3){ (Array.isArray(d)?d:[d]).forEach(x => ops.push({k:'p',d:x,c,w})); return b; },
+    t(x,y,s,o={}){ ops.push({k:'t',x,y,s,...o}); return b; },
+    i(x,y,s,href,o={}){ ops.push({k:'i',x,y,s,href,...o}); return b; },
+    w(ms){ ops.push({k:'w',ms}); return b; }
+  };
+  return b;
+}
+function head(b,n,title,sub,u){
+  b.t(110,110,'It means…',{size:32,c:C.dim,f:'l'});
+  b.t(110,174,title,{size:58,wt:600,u:u?C.yel:null});
+  if(sub) b.t(110,230,sub,{size:34,f:'l'});
+  b.w(250);
+}
+
+/* dashed versions (one path, many sub-paths) to mark what is optional */
+function dashPts(pts, dash=20, gap=13){
+  let d='', on=true, left=dash;
+  for(let i=1;i<pts.length;i++){
+    let [ax,ay]=pts[i-1]; const [bx,by]=pts[i];
+    let L=Math.hypot(bx-ax,by-ay);
+    while(L>0){
+      const s=Math.min(left,L), t=s/Math.hypot(bx-ax,by-ay);
+      const nx=ax+(bx-ax)*t, ny=ay+(by-ay)*t;
+      if(on) d += ` M${f(ax+j(.8))} ${f(ay+j(.8))} L${f(nx+j(.8))} ${f(ny+j(.8))}`;
+      ax=nx; ay=ny; L-=s; left-=s;
+      if(left<=0){ on=!on; left=on?dash:gap; }
+    }
+  }
+  return d.trim();
+}
+const dashRect = (x,y,w,h) => dashPts([[x,y],[x+w,y],[x+w,y+h],[x,y+h],[x,y]]);
+function dashEll(cx,cy,rx,ry){ const pts=[]; for(let i=0;i<=72;i++){ const a=i/72*Math.PI*2; pts.push([cx+Math.cos(a)*rx, cy+Math.sin(a)*ry]); } return dashPts(pts,18,12); }
+function bolt(x,y,s){ return poly([[x+25*s,y],[x,y+48*s],[x+20*s,y+48*s],[x+8*s,y+90*s],[x+48*s,y+34*s],[x+27*s,y+34*s],[x+40*s,y]],true,1); }
+function picture(x,y,w,h){ return [ rect(x,y,w,h,1.5), poly([[x+8,y+h-8],[x+w*.35,y+h*.45],[x+w*.55,y+h*.7],[x+w*.72,y+h*.55],[x+w-8,y+h-8]],false,1), ell(x+w*.75,y+h*.28,9,9) ]; }
+function wave(x,y,w,a){ let d=`M${f(x)} ${f(y)}`; for(let i=1;i<=40;i++){ const t=i/40; d+=` L${f(x+w*t)} ${f(y+Math.sin(t*Math.PI*6)*a*(0.3+0.7*Math.abs(Math.sin(t*Math.PI*2.3))))}`; } return d; }
+function meas(s,size,fk,wt){
+  const el=document.createElementNS(NS,'text');
+  el.setAttribute('font-family',FONT[fk||'h']); el.setAttribute('font-size',size); el.setAttribute('font-weight',wt||500);
+  el.textContent=s; layer.appendChild(el); const w=el.getBBox().width; el.remove(); return w;
+}
+function code(b,x,y,toks,size){
+  const sp = meas('a a',size,'l') - meas('aa',size,'l');
+  toks.forEach(([str,c]) => {
+    const lead = str.length - str.trimStart().length, t = str.trim();
+    x += lead*sp;
+    if(t){ b.t(x,y,t,{size,f:'l',c}); x += meas(t,size,'l'); }
+  });
+  return x;
+}
+function head2(b,kick,title,sub,u){
+  b.t(110,110,kick,{size:32,c:C.dim,f:'l'});
+  b.t(110,174,title,{size:58,wt:600,u:u?C.yel:null});
+  if(sub) b.t(110,230,sub,{size:34,f:'l'});
+  b.w(250);
+}
+
+const LOGO = 'assets/images/logo.png';
+let LOGO_AR = 900/400;
+const logoReady = new Promise(res => {
+  const im = new Image();
+  im.onload = () => { if(im.naturalWidth && im.naturalHeight) LOGO_AR = im.naturalWidth/im.naturalHeight; res(); };
+  im.onerror = () => res();
+  im.src = LOGO;
+});
+
+/* ---------- the scenes ---------- */
+const SCENES = [
+/* manifest */
+b => {
+  b.i(800,330,'Mikup',LOGO,{size:170,a:'middle',wt:700}).w(250);
+  b.t(800,475,'One grammar. Any resource. Any app.',{size:74,a:'middle',wt:600}).w(300);
+  b.t(800,550,'Micro Apps for the enterprise: lighter than a monolith, sturdier than microservices.',{size:34,a:'middle',f:'l',c:C.dim}).w(250);
+  b.p(cyl(420,690,60,50),C.dim,2.5);
+  b.p(monitor(550,688,80,48),C.dim,2.5);
+  b.p(gear(730,712,30,8),C.dim,2.5);
+  b.p(lock(870,697,.45),C.dim,2.5);
+  b.p(globe(1010,712,32),C.dim,2.5);
+  b.p(star4(1150,712,32),C.dim,2.5);
+}
+
+];
+const TITLES = ['Manifest'];
+
+
+/* ---------- clock & tweens (pausable, speed-aware) ---------- */
+let paused=false, speed=2.5, vt=0, last=performance.now();
+const tweens = new Set();
+function loop(t){
+  const dt = Math.min(64, t-last); last = t;
+  if(!paused) vt += dt*speed;
+  for(const tw of [...tweens]){
+    const p = Math.min(1, (vt-tw.t0)/tw.dur);
+    tw.fn(p);
+    if(p>=1){ tweens.delete(tw); tw.res(true); }
+  }
+  requestAnimationFrame(loop);
+}
+requestAnimationFrame(loop);
+function tween(dur, fn=()=>{}){ return new Promise(res => { const tw={t0:vt,dur:Math.max(1,dur),fn,res}; tweens.add(tw); fn(0); }); }
+function cancelAll(){ for(const tw of tweens) tw.res(false); tweens.clear(); }
+
+const movePencil = (x,y) => pencil.setAttribute('transform',`translate(${f(x)},${f(y)})`);
+let pencilOn = false;
+let manual = false, advanceRes = null;
+let extraHold = 1;
+const showPencil = v => { pencil.style.opacity = (v && pencilOn) ? 1 : 0; };
+
+/* ---------- playing ops ---------- */
+let gen=0, cur=0, uid=0, finished=false, started=false;
+async function playOp(op, grp, g){
+  if(g!==gen) return false;
+  if(op.k==='w'){ showPencil(false); return tween(op.ms); }
+  if(op.k==='p'){
+    const el = document.createElementNS(NS,'path');
+    el.setAttribute('d',op.d); el.setAttribute('stroke',op.c); el.setAttribute('stroke-width',op.w);
+    grp.appendChild(el);
+    const L = el.getTotalLength();
+    el.style.strokeDasharray = `${L} ${L+4}`; el.style.strokeDashoffset = L;
+    showPencil(true);
+    const ok = await tween(Math.min(1600, Math.max(160, L/0.9)), p => {
+      el.style.strokeDashoffset = L*(1-p);
+      const pt = el.getPointAtLength(L*p); movePencil(pt.x, pt.y);
+    });
+    if(ok) el.style.strokeDasharray = 'none';
+    return ok;
+  }
+  if(op.k==='i'){
+    // measure the text this logo replaces, then fit the logo into that box
+    const tx = document.createElementNS(NS,'text');
+    tx.setAttribute('x',op.x); tx.setAttribute('y',op.y);
+    tx.setAttribute('text-anchor', op.a||'start');
+    tx.setAttribute('font-family', FONT[op.f||'h']);
+    tx.setAttribute('font-size', op.size||40);
+    tx.setAttribute('font-weight', op.wt||500);
+    tx.textContent = op.s; layer.appendChild(tx);
+    const tb = tx.getBBox(); tx.remove();
+    let w = tb.width, h = w/LOGO_AR;
+    if(h > tb.height){ h = tb.height; w = h*LOGO_AR; }
+    const bb = { x: tb.x + (tb.width-w)/2, y: tb.y + (tb.height-h)/2, width: w, height: h };
+    let plain = layer.querySelector('g.plain');
+    if(!plain){ plain = document.createElementNS(NS,'g'); plain.setAttribute('class','plain'); layer.appendChild(plain); }
+    const el = document.createElementNS(NS,'image');
+    el.setAttribute('href', op.href);
+    el.setAttribute('x', f(bb.x)); el.setAttribute('y', f(bb.y));
+    el.setAttribute('width', f(bb.width)); el.setAttribute('height', f(bb.height));
+    el.setAttribute('preserveAspectRatio','xMidYMid meet');
+    plain.appendChild(el);
+    const id = 'clip'+(++uid);
+    const cp = document.createElementNS(NS,'clipPath'); cp.id = id;
+    const r = document.createElementNS(NS,'rect');
+    r.setAttribute('x',bb.x-12); r.setAttribute('y',bb.y-16); r.setAttribute('height',bb.height+32); r.setAttribute('width',0);
+    cp.appendChild(r); plain.appendChild(cp);
+    el.setAttribute('clip-path',`url(#${id})`);
+    showPencil(true);
+    const n = op.s.length;
+    return tween(Math.min(2600, Math.max(300, bb.width/0.6)), p => {
+      r.setAttribute('width', (bb.width+24)*p);
+      movePencil(bb.x + bb.width*p, bb.y + bb.height*(.55 + .2*Math.sin(p*n*2.3)));
+    });
+  }
+  if(op.k==='t'){
+    const el = document.createElementNS(NS,'text');
+    el.setAttribute('x',op.x); el.setAttribute('y',op.y);
+    el.setAttribute('text-anchor', op.a||'start');
+    el.setAttribute('font-family', FONT[op.f||'h']);
+    el.setAttribute('font-size', op.size||40);
+    el.setAttribute('font-weight', op.wt||500);
+    el.setAttribute('fill', op.c||C.chalk);
+    el.textContent = op.s;
+    grp.appendChild(el);
+    const bb = el.getBBox();
+    const id = 'clip'+(++uid);
+    const cp = document.createElementNS(NS,'clipPath'); cp.id = id;
+    const r = document.createElementNS(NS,'rect');
+    r.setAttribute('x',bb.x-12); r.setAttribute('y',bb.y-16); r.setAttribute('height',bb.height+32); r.setAttribute('width',0);
+    cp.appendChild(r); grp.appendChild(cp);
+    el.setAttribute('clip-path',`url(#${id})`);
+    showPencil(true);
+    const n = op.s.length;
+    const ok = await tween(Math.min(2600, Math.max(300, bb.width/0.6)), p => {
+      r.setAttribute('width', (bb.width+24)*p);
+      movePencil(bb.x + bb.width*p, bb.y + bb.height*(.55 + .2*Math.sin(p*n*2.3)));
+    });
+    if(!ok) return false;
+    if(op.u){
+      const y = op.y + (op.size||40)*.17, x0 = bb.x-6, x1 = bb.x+bb.width+6, pts=[];
+      for(let i=0;i<=5;i++) pts.push([x0+(x1-x0)*i/5, y+j(3)]);
+      return playOp({k:'p', d:poly(pts,false,2), c:op.u, w:3.5}, grp, g);
+    }
+    return true;
+  }
+  return true;
+}
+
+async function runScene(i){
+  const g = ++gen; cur = i; finished = false; updateUI();
+  layer.innerHTML = '';
+  const grp = document.createElementNS(NS,'g');
+  grp.setAttribute('filter','url(#pencilFx)');
+  layer.appendChild(grp);
+  const sid = ORDER[i];
+  seed(sid*977 + 13);
+  const b = B(); SCENES[sid](b);
+  if(!await tween(350) || g!==gen) return;
+  for(const op of b.ops){
+    if(!await playOp(op, grp, g) || g!==gen) return;
+    if(!await tween(60) || g!==gen) return;
+  }
+  showPencil(false);
+  if(cur >= ORDER.length-1){ finished = true; updateUI(); showBar(); return; }
+  if(manual){ const ok = await new Promise(r => { advanceRes = r; }); if(!ok || g!==gen) return; }
+  else if(!await tween(2600 + extraHold*1000*speed) || g!==gen) return;
+  if(!await tween(700, p => { grp.style.opacity = 1-p; }) || g!==gen) return;
+  runScene(cur+1);
+}
+function advance(){
+  if(!started || finished) return;
+  if(advanceRes){ const r = advanceRes; advanceRes = null; r(true); }
+  else jump(cur+1);
+}
+function jump(i){ if(advanceRes){ const r = advanceRes; advanceRes = null; r(false); } cancelAll(); paused = false; showPencil(false); runScene(Math.max(0, Math.min(ORDER.length-1, i))); }
+
+/* ---------- controls (no toolbar) ---------- */
+const stage = document.getElementById('stage');
+const ORDER = [0];
+function updateUI(){}
+function showBar(){}
+function togglePlay(){
+  if(!started) return start();
+  if(finished) return jump(0);
+  paused = !paused;
+}
+function toggleFs(){ try{ if(document.fullscreenElement) document.exitFullscreen(); else document.documentElement.requestFullscreen(); }catch(e){} }
+let hideT;
+stage.addEventListener('mousemove', () => {
+  if(!started) return;
+  stage.classList.remove('nocursor'); clearTimeout(hideT);
+  hideT = setTimeout(() => stage.classList.add('nocursor'), 2000);
+}, {passive:true});
+document.addEventListener('keydown', e => {
+  if(e.key===' '){ e.preventDefault(); togglePlay(); }
+  else if(e.key==='r'||e.key==='R') jump(0);
+  else if(e.key==='f'||e.key==='F') toggleFs();
+  else if(e.key==='p'||e.key==='P'){ pencilOn = !pencilOn; if(!pencilOn) pencil.style.opacity = 0; }
+});
+
+async function start(){
+  if(started) return; started = true;
+  try{
+    await Promise.race([
+      Promise.all([document.fonts.load('600 60px Caveat'), document.fonts.load('40px "Patrick Hand"'), logoReady]),
+      new Promise(r => setTimeout(r, 2500))
+    ]);
+  }catch(e){}
+  showBar();
+  runScene(0);
+}
+start();
+})();
+</script>
+</body>
