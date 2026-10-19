@@ -1,0 +1,726 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Mikup — The Resource, drawn by hand</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Caveat:wght@500;600;700&family=Patrick+Hand&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#000; --ink:#ecebe6; --ink-dim:#8f8e88; --accent:#f4d35e; --bar:rgba(24,24,24,.78); --bar-line:rgba(236,235,230,.16);
+    color-scheme:dark;
+    box-sizing:border-box;
+    padding-top:env(safe-area-inset-top,0px);
+    padding-bottom:env(safe-area-inset-bottom,0px);
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){ --bg:#000; --ink:#ecebe6; --ink-dim:#8f8e88; --accent:#f4d35e; --bar:rgba(24,24,24,.78); --bar-line:rgba(236,235,230,.16); }
+  }
+  :root[data-theme="dark"]{ --bg:#000; --ink:#ecebe6; --ink-dim:#8f8e88; --accent:#f4d35e; --bar:rgba(24,24,24,.78); --bar-line:rgba(236,235,230,.16); }
+  html{ scroll-padding-top:env(safe-area-inset-top,0px); height:100%; }
+  html,body{ margin:0; height:100%; }
+  *,*::before,*::after{ box-sizing:inherit; }
+  body{ background:var(--bg); color:var(--ink); font-family:"Patrick Hand","Comic Sans MS",cursive,sans-serif; overflow:hidden; }
+  #stage{ position:relative; width:100%; height:100%; background:var(--bg); }
+  #stage.nocursor{ cursor:none; }
+  svg#board{ width:100%; height:100%; display:block; }
+  #layer path{ fill:none; stroke-linecap:round; stroke-linejoin:round; }
+  #pencil{ transition:opacity .25s ease; pointer-events:none; }
+
+  #start{ position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:18px; background:var(--bg); z-index:5; }
+  #start button{ font:inherit; background:none; border:2px solid var(--ink); color:var(--ink); border-radius:999px; width:96px; height:96px; font-size:38px; cursor:pointer; display:grid; place-items:center; padding-left:6px; }
+  #start button:focus-visible{ outline:3px solid var(--accent); outline-offset:6px; }
+  #start p{ margin:0; font-family:"Caveat","Patrick Hand",cursive; font-size:clamp(22px,3.2vw,34px); color:var(--ink-dim); }
+
+  #bar{ position:absolute; left:50%; bottom:calc(18px + env(safe-area-inset-bottom,0px)); transform:translateX(-50%); display:flex; align-items:center; gap:6px; padding:8px 12px; background:var(--bar); border:1px solid var(--bar-line); border-radius:14px; backdrop-filter:blur(6px); transition:opacity .35s ease; z-index:6; max-width:calc(100% - 24px); }
+  #bar.hide{ opacity:0; pointer-events:none; }
+  #bar.hide:focus-within{ opacity:1; pointer-events:auto; }
+  #bar{ flex-direction:column; align-items:stretch; gap:4px; width:max-content; }
+  #bar .row{ display:flex; align-items:center; justify-content:center; gap:6px; flex-wrap:nowrap; }
+  #bar button{ font:inherit; font-size:20px; line-height:1; color:var(--ink); background:none; border:0; border-radius:9px; min-width:40px; height:38px; cursor:pointer; padding:0 8px; }
+  #bar button:hover{ background:rgba(236,235,230,.08); }
+  #bar button:focus-visible{ outline:2px solid var(--accent); outline-offset:1px; }
+  #speed{ font-size:17px !important; min-width:52px !important; }
+  #dots{ display:flex; justify-content:center; align-items:center; gap:7px; padding:6px 8px 4px; flex-wrap:nowrap; }
+  #dots button{ min-width:0 !important; width:11px; height:11px !important; padding:0 !important; border-radius:50% !important; background:var(--ink-dim) !important; opacity:.45; }
+  #dots button.on{ background:var(--accent) !important; opacity:1; }
+  #holdCtl{ display:flex; align-items:center; gap:3px; font-size:18px; color:var(--ink); padding:0 8px; height:38px; border-radius:9px; white-space:nowrap; }
+  #holdCtl:hover{ background:rgba(236,235,230,.08); }
+  #holdCtl input{ width:52px; font:inherit; font-size:17px; color:var(--ink); background:rgba(236,235,230,.06); border:1px solid var(--bar-line); border-radius:7px; padding:3px 4px; text-align:center; }
+  #holdCtl input:focus-visible{ outline:2px solid var(--accent); outline-offset:1px; }
+  #mfCtl{ display:flex; align-items:center; gap:8px; font-size:18px; color:var(--ink-dim); padding:0 8px; height:38px; border-radius:9px; white-space:nowrap; }
+  #mfCtl label{ display:flex; align-items:center; gap:4px; color:var(--ink); cursor:pointer; user-select:none; }
+  #mfCtl input{ width:17px; height:17px; accent-color:var(--accent); margin:0; cursor:pointer; }
+  #mfCtl input:focus-visible{ outline:2px solid var(--accent); outline-offset:2px; }
+  #manualToggle{ display:flex; align-items:center; gap:6px; font-size:18px; color:var(--ink); padding:0 8px; height:38px; border-radius:9px; cursor:pointer; user-select:none; white-space:nowrap; }
+  #manualToggle:hover{ background:rgba(236,235,230,.08); }
+  #manualToggle input{ width:17px; height:17px; accent-color:var(--accent); margin:0; cursor:pointer; }
+  #manualToggle input:focus-visible{ outline:2px solid var(--accent); outline-offset:2px; }
+  #pencilToggle{ display:flex; align-items:center; gap:6px; font-size:18px; color:var(--ink); padding:0 8px; height:38px; border-radius:9px; cursor:pointer; user-select:none; white-space:nowrap; }
+  #pencilToggle:hover{ background:rgba(236,235,230,.08); }
+  #pencilToggle input{ width:17px; height:17px; accent-color:var(--accent); margin:0; cursor:pointer; }
+  #pencilToggle input:focus-visible{ outline:2px solid var(--accent); outline-offset:2px; }
+  @media (max-width:640px){ #dots{ display:none; } }
+</style>
+</head>
+<body>
+<div id="stage">
+  <svg id="board" viewBox="0 0 1600 900" preserveAspectRatio="xMidYMid meet" aria-label="Animated Mikup sketchboard: the Resource">
+    <defs id="defs">
+      <filter id="pencilFx" filterUnits="userSpaceOnUse" x="0" y="0" width="1600" height="900">
+        <feTurbulence type="fractalNoise" baseFrequency="0.8" numOctaves="2" seed="4" result="warp"/>
+        <feDisplacementMap in="SourceGraphic" in2="warp" scale="2.4" xChannelSelector="R" yChannelSelector="G" result="wobbly"/>
+        <feTurbulence type="fractalNoise" baseFrequency="1.4" numOctaves="1" seed="9" result="grain"/>
+        <feColorMatrix in="grain" type="matrix" values="0 0 0 0 1  0 0 0 0 1  0 0 0 0 1  1.5 0 0 0 0.12" result="grainA"/>
+        <feComposite in="wobbly" in2="grainA" operator="in"/>
+      </filter>
+    </defs>
+    <rect width="1600" height="900" fill="#000"/>
+    <g id="layer"></g>
+    <g id="pencil" opacity="0">
+      <g transform="rotate(-52) scale(.95)">
+        <path d="M0 0 L26 -9 L26 9 Z" fill="#e3c39a"/>
+        <path d="M0 0 L9 -3.2 L9 3.2 Z" fill="#d9d9d9"/>
+        <rect x="26" y="-9" width="132" height="18" fill="#f2c94c"/>
+        <rect x="26" y="-2.5" width="132" height="2.5" fill="#cfa62a"/>
+        <rect x="158" y="-9.5" width="11" height="19" fill="#b9b9b9"/>
+        <rect x="169" y="-9" width="18" height="18" rx="4" fill="#e78f8f"/>
+      </g>
+    </g>
+  </svg>
+
+  <div id="start">
+    <button id="startBtn" aria-label="Start the presentation">▶</button>
+    <p>Mikup — press to start</p>
+  </div>
+
+  <div id="bar" class="hide" role="toolbar" aria-label="Controls">
+    <div id="dots"></div>
+    <div class="row">
+    <button id="restart" title="From the start (R)" aria-label="Restart">⏮</button>
+    <button id="prev" title="Previous scene (←)" aria-label="Previous scene">◀</button>
+    <button id="play" title="Pause / resume (space)" aria-label="Pause">❚❚</button>
+    <button id="next" title="Next scene (→)" aria-label="Next scene">▶</button>
+    <label id="pencilToggle" title="Show the pencil (P)"><input type="checkbox" id="pencilChk"> ✏️ pencil</label>
+    <span id="mfCtl" title="Show the manifest slide at the start and/or at the end">manifest
+      <label><input type="checkbox" id="mfStartChk" checked> start</label>
+      <label><input type="checkbox" id="mfEndChk" checked> end</label>
+    </span>
+    <label id="manualToggle" title="Manual advance: press Enter for the next scene (M)"><input type="checkbox" id="manualChk"> ⏎ manual</label>
+    <label id="holdCtl" title="Extra seconds to wait at the end of each slide">⏱ +<input type="number" id="holdIn" min="0" max="60" step="0.5" value="1" aria-label="Extra seconds at the end of each slide">s</label>
+    <button id="speed" title="Speed" aria-label="Speed">2×</button>
+    <button id="fs" title="Full screen (F)" aria-label="Full screen">⛶</button>
+    </div>
+  </div>
+</div>
+
+<script>
+(() => {
+const NS = 'http://www.w3.org/2000/svg';
+const layer = document.getElementById('layer');
+const pencil = document.getElementById('pencil');
+const C = { chalk:'#ecebe6', dim:'#8f8e88', yel:'#f4d35e', cy:'#7fd3e6', red:'#ff7a6b', grn:'#9be38f' };
+const FONT = { h:'Caveat, "Patrick Hand", cursive', l:'"Patrick Hand", Caveat, cursive' };
+
+/* ---------- seeded randomness for the hand-drawn wobble ---------- */
+let _s = 1;
+const seed = n => { _s = n >>> 0; };
+function rnd(){ _s |= 0; _s = _s + 0x6D2B79F5 | 0; let t = Math.imul(_s ^ _s >>> 15, 1 | _s); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }
+const j = a => (rnd()*2 - 1) * a;
+const f = n => Math.round(n*10)/10;
+
+/* ---------- hand-drawn primitives ---------- */
+function seg(a, b, bow){
+  const dx=b[0]-a[0], dy=b[1]-a[1], len=Math.hypot(dx,dy)||1;
+  const k = j(bow*Math.min(1,len/150) + .5);
+  return ` Q${f((a[0]+b[0])/2 - dy/len*k)} ${f((a[1]+b[1])/2 + dx/len*k)} ${f(b[0])} ${f(b[1])}`;
+}
+function poly(pts, closed=false, bow=3){
+  pts = pts.map(p => [p[0]+j(1.2), p[1]+j(1.2)]);
+  let d = `M${f(pts[0][0])} ${f(pts[0][1])}`;
+  for(let i=1;i<pts.length;i++) d += seg(pts[i-1], pts[i], bow);
+  if(closed){
+    const a=pts[pts.length-1], s=pts[0], n=pts[1];
+    d += seg(a, s, bow);
+    d += ` L${f(s[0]+(n[0]-s[0])*.07+j(2))} ${f(s[1]+(n[1]-s[1])*.07+j(2))}`;
+  }
+  return d;
+}
+const line = (x1,y1,x2,y2,bow=3) => poly([[x1,y1],[x2,y2]], false, bow);
+const rect = (x,y,w,h,bow=3) => poly([[x,y],[x+w,y],[x+w,y+h],[x,y+h]], true, bow);
+function ell(cx,cy,rx,ry,a0=-Math.PI/2-.3,sweep=Math.PI*2+.4,wob=.03){
+  const n = Math.max(20, Math.round((rx+ry)*Math.abs(sweep)/9));
+  const ph = rnd()*6; let d='';
+  for(let i=0;i<=n;i++){
+    const a = a0 + sweep*i/n;
+    const r = 1 + wob*Math.sin(a*2+ph) + (i/n)*.02;
+    d += (i?' L':'M') + f(cx+Math.cos(a)*rx*r) + ' ' + f(cy+Math.sin(a)*ry*r);
+  }
+  return d;
+}
+function arrow(x1,y1,x2,y2,bow=5,hs=18){
+  const a = Math.atan2(y2-y1,x2-x1);
+  return [ line(x1,y1,x2,y2,bow),
+    `M${f(x2-hs*Math.cos(a-.45))} ${f(y2-hs*Math.sin(a-.45))} L${f(x2)} ${f(y2)} L${f(x2-hs*Math.cos(a+.45))} ${f(y2-hs*Math.sin(a+.45))}` ];
+}
+function cyl(x,y,w,h){ const rx=w/2, ry=Math.max(9,w*.16);
+  return [ ell(x+rx,y,rx,ry), line(x,y,x,y+h,1), line(x+w,y,x+w,y+h,1), ell(x+rx,y+h,rx,ry,0,Math.PI,.01), ell(x+rx,y+h*.5,rx,ry,.1,Math.PI-.2,.01) ]; }
+function doc(x,y,w,h){ const c=Math.min(26,w*.25);
+  return [ poly([[x,y],[x+w-c,y],[x+w,y+c],[x+w,y+h],[x,y+h]], true, 2), poly([[x+w-c,y],[x+w-c,y+c],[x+w,y+c]], false, 1) ]; }
+function monitor(x,y,w,h){ return [ rect(x,y,w,h,2), line(x+w/2,y+h,x+w/2,y+h+28,1), line(x+w/2-40,y+h+30,x+w/2+40,y+h+30,1) ]; }
+function phone(x,y,w,h){ return [ rect(x,y,w,h,2), line(x+w/2-12,y+h-14,x+w/2+12,y+h-14,.5) ]; }
+function gear(cx,cy,r,t=10){ const pts=[], n=t*4;
+  for(let i=0;i<n;i++){ const a=i/n*Math.PI*2, rr=(i%4<2)?r:r*.78; pts.push([cx+Math.cos(a)*rr, cy+Math.sin(a)*rr]); }
+  return [ poly(pts,true,.4), ell(cx,cy,r*.32,r*.32) ]; }
+function person(x,y,s=1){ return [ ell(x,y,18*s,18*s), line(x,y+19*s,x,y+92*s,2),
+  poly([[x-36*s,y+66*s],[x,y+42*s],[x+36*s,y+66*s]],false,2), poly([[x-30*s,y+150*s],[x,y+92*s],[x+30*s,y+150*s]],false,2) ]; }
+function bubble(x,y,w,h,tx,ty){ return [ ell(x+w/2,y+h/2,w/2,h/2), poly([[x+w*.28,y+h*.86],[tx,ty],[x+w*.42,y+h*.97]],false,1) ]; }
+function star4(cx,cy,r){ const q=()=>`${f(cx+j(r*.08))} ${f(cy+j(r*.08))}`;
+  return `M${f(cx)} ${f(cy-r)} Q${q()} ${f(cx+r)} ${f(cy)} Q${q()} ${f(cx)} ${f(cy+r)} Q${q()} ${f(cx-r)} ${f(cy)} Q${q()} ${f(cx)} ${f(cy-r)}`; }
+const check = (x,y,s) => poly([[x,y],[x+s*.35,y+s*.4],[x+s,y-s*.5]],false,1);
+function folder(x,y,w,h){ return poly([[x,y+14],[x,y],[x+w*.35,y],[x+w*.43,y+14],[x+w,y+14],[x+w,y+h],[x,y+h]],true,1.5); }
+function lock(cx,cy,s){ return [ ell(cx,cy,42*s,58*s,Math.PI,Math.PI,.005), rect(cx-62*s,cy,124*s,100*s,2), ell(cx,cy+40*s,10*s,10*s), line(cx,cy+50*s,cx,cy+72*s,.5) ]; }
+function globe(cx,cy,r){ return [ ell(cx,cy,r,r), ell(cx,cy,r*.42,r,-Math.PI/2,Math.PI*2+.2,.01), line(cx-r,cy,cx+r,cy,2),
+  line(cx-r*.86,cy-r*.5,cx+r*.86,cy-r*.5,2), line(cx-r*.86,cy+r*.5,cx+r*.86,cy+r*.5,2) ]; }
+function cube(x,y,s){ const d=s*.4, e=s*.35;
+  return [ rect(x,y,s,s,1.2), poly([[x,y],[x+d,y-e],[x+s+d,y-e],[x+s,y]],false,1), poly([[x+s+d,y-e],[x+s+d,y+s-e],[x+s,y+s]],false,1) ]; }
+function cloud(cx,cy,rx,ry){ const n=110; let d='';
+  for(let i=0;i<=n+5;i++){ const a=-Math.PI/2+i/n*Math.PI*2, r=.86+.2*Math.abs(Math.sin(a*3.5));
+    d += (i?' L':'M') + f(cx+Math.cos(a)*rx*r) + ' ' + f(cy+Math.sin(a)*ry*r); }
+  return d; }
+function scribble(x,y,w,h,n){ const pts=[]; for(let i=0;i<n;i++) pts.push([x+rnd()*w, y+rnd()*h]); return poly(pts,false,30); }
+
+/* ---------- scene builder ---------- */
+function B(){
+  const ops=[];
+  const b = {
+    ops,
+    p(d,c=C.chalk,w=3){ (Array.isArray(d)?d:[d]).forEach(x => ops.push({k:'p',d:x,c,w})); return b; },
+    t(x,y,s,o={}){ ops.push({k:'t',x,y,s,...o}); return b; },
+    w(ms){ ops.push({k:'w',ms}); return b; }
+  };
+  return b;
+}
+function head(b,n,title,sub,u){
+  b.t(110,110,'It means…',{size:32,c:C.dim,f:'l'});
+  b.t(110,174,title,{size:58,wt:600,u:u?C.yel:null});
+  if(sub) b.t(110,230,sub,{size:34,f:'l'});
+  b.w(250);
+}
+
+/* dashed versions (one path, many sub-paths) to mark what is optional */
+function dashPts(pts, dash=20, gap=13){
+  let d='', on=true, left=dash;
+  for(let i=1;i<pts.length;i++){
+    let [ax,ay]=pts[i-1]; const [bx,by]=pts[i];
+    let L=Math.hypot(bx-ax,by-ay);
+    while(L>0){
+      const s=Math.min(left,L), t=s/Math.hypot(bx-ax,by-ay);
+      const nx=ax+(bx-ax)*t, ny=ay+(by-ay)*t;
+      if(on) d += ` M${f(ax+j(.8))} ${f(ay+j(.8))} L${f(nx+j(.8))} ${f(ny+j(.8))}`;
+      ax=nx; ay=ny; L-=s; left-=s;
+      if(left<=0){ on=!on; left=on?dash:gap; }
+    }
+  }
+  return d.trim();
+}
+const dashRect = (x,y,w,h) => dashPts([[x,y],[x+w,y],[x+w,y+h],[x,y+h],[x,y]]);
+function dashEll(cx,cy,rx,ry){ const pts=[]; for(let i=0;i<=72;i++){ const a=i/72*Math.PI*2; pts.push([cx+Math.cos(a)*rx, cy+Math.sin(a)*ry]); } return dashPts(pts,18,12); }
+function bolt(x,y,s){ return poly([[x+25*s,y],[x,y+48*s],[x+20*s,y+48*s],[x+8*s,y+90*s],[x+48*s,y+34*s],[x+27*s,y+34*s],[x+40*s,y]],true,1); }
+function picture(x,y,w,h){ return [ rect(x,y,w,h,1.5), poly([[x+8,y+h-8],[x+w*.35,y+h*.45],[x+w*.55,y+h*.7],[x+w*.72,y+h*.55],[x+w-8,y+h-8]],false,1), ell(x+w*.75,y+h*.28,9,9) ]; }
+function wave(x,y,w,a){ let d=`M${f(x)} ${f(y)}`; for(let i=1;i<=40;i++){ const t=i/40; d+=` L${f(x+w*t)} ${f(y+Math.sin(t*Math.PI*6)*a*(0.3+0.7*Math.abs(Math.sin(t*Math.PI*2.3))))}`; } return d; }
+function meas(s,size,fk,wt){
+  const el=document.createElementNS(NS,'text');
+  el.setAttribute('font-family',FONT[fk||'h']); el.setAttribute('font-size',size); el.setAttribute('font-weight',wt||500);
+  el.textContent=s; layer.appendChild(el); const w=el.getBBox().width; el.remove(); return w;
+}
+function code(b,x,y,toks,size){
+  const sp = meas('a a',size,'l') - meas('aa',size,'l');
+  toks.forEach(([str,c]) => {
+    const lead = str.length - str.trimStart().length, t = str.trim();
+    x += lead*sp;
+    if(t){ b.t(x,y,t,{size,f:'l',c}); x += meas(t,size,'l'); }
+  });
+  return x;
+}
+function head2(b,kick,title,sub,u){
+  b.t(110,110,kick,{size:32,c:C.dim,f:'l'});
+  b.t(110,174,title,{size:58,wt:600,u:u?C.yel:null});
+  if(sub) b.t(110,230,sub,{size:34,f:'l'});
+  b.w(250);
+}
+
+/* ---------- the scenes ---------- */
+const SCENES = [
+/* manifest */
+b => {
+  b.t(800,330,'Mikup',{size:170,c:C.yel,a:'middle',wt:700,u:C.yel}).w(250);
+  b.t(800,475,'One grammar. Any resource. Any app.',{size:74,a:'middle',wt:600}).w(300);
+  b.t(800,550,'Micro Apps for the enterprise: lighter than a monolith, sturdier than microservices.',{size:34,a:'middle',f:'l',c:C.dim}).w(250);
+  b.p(cyl(420,690,60,50),C.dim,2.5);
+  b.p(monitor(550,688,80,48),C.dim,2.5);
+  b.p(gear(730,712,30,8),C.dim,2.5);
+  b.p(lock(870,697,.45),C.dim,2.5);
+  b.p(globe(1010,712,32),C.dim,2.5);
+  b.p(star4(1150,712,32),C.dim,2.5);
+},
+/* 1 · first-class citizen */
+b => {
+  b.t(800,150,'The Resource',{size:100,c:C.yel,a:'middle',wt:700,u:C.yel});
+  b.t(800,222,'the first-class citizen of Mikup',{size:38,a:'middle',f:'l'}).w(300);
+  b.p(ell(800,450,190,92),C.yel,4);
+  b.t(800,470,'Resource',{size:66,c:C.yel,a:'middle',wt:700}).w(250);
+  b.p(arrow(330,450,590,450,6,20),C.chalk,3);
+  b.t(450,425,'it starts here',{size:32,a:'middle',f:'l'});
+  b.p(arrow(1010,450,1270,450,6,20),C.chalk,3);
+  b.t(1150,425,'it ends here',{size:32,a:'middle',f:'l'}).w(250);
+  b.p(line(700,530,520,620,3),C.dim,2).p(line(800,545,800,620,2),C.dim,2).p(line(900,530,1080,620,3),C.dim,2);
+  // workflow
+  b.p(ell(450,670,16,16),C.chalk,2.8).p(arrow(470,670,505,670,1,10),C.chalk,2.5).p(ell(525,670,16,16),C.chalk,2.8).p(arrow(545,670,580,670,1,10),C.chalk,2.5).p(ell(600,670,16,16),C.chalk,2.8);
+  b.t(525,745,'every workflow',{size:34,a:'middle',f:'l'});
+  // saving
+  b.p(cyl(765,640,70,55),C.chalk,2.8);
+  b.t(800,745,'every save',{size:34,a:'middle',f:'l'});
+  // processing
+  b.p(gear(1080,672,36,9),C.chalk,2.8);
+  b.t(1080,745,'every processing',{size:34,a:'middle',f:'l'}).w(250);
+  b.t(800,815,'everything starts and ends with a Resource',{size:38,a:'middle',c:C.yel});
+},
+/* 2 · two ways to look at it */
+b => {
+  b.t(800,160,'Two ways to understand it',{size:70,a:'middle',wt:600}).w(300);
+  b.p(rect(330,320,240,170,2),C.chalk,3);
+  b.p(line(330,380,570,380,2),C.chalk,2.5);
+  b.t(450,362,'metadata',{size:28,a:'middle',f:'l',c:C.yel});
+  b.t(450,445,'content',{size:28,a:'middle',f:'l',c:C.dim});
+  b.t(450,590,'Anatomy',{size:64,c:C.yel,a:'middle',wt:700});
+  b.t(450,640,'how it is made',{size:34,a:'middle',f:'l'}).w(250);
+  b.p(line(800,300,800,700,4),C.dim,2.5).p(line(806,310,804,692,4),C.dim,1.5).w(150);
+  [[1030,'1'],[1150,'2'],[1270,'3']].forEach(([x,n],i) => {
+    b.p(i===2 ? dashEll(x,405,40,40) : ell(x,405,40,40),C.chalk,3);
+    b.t(x,420,n,{size:40,a:'middle'});
+  });
+  b.p(arrow(1074,405,1106,405,1,10),C.chalk,2.5).p(arrow(1194,405,1226,405,1,10),C.chalk,2.5);
+  b.t(1150,590,'Definition',{size:64,c:C.yel,a:'middle',wt:700});
+  b.t(1150,640,'how it comes to life',{size:34,a:'middle',f:'l'});
+},
+/* 3 · anatomy */
+b => {
+  head2(b,'Anatomy','identity, always separate from the payload','a Resource is made of two parts');
+  b.t(560,295,'Resource',{size:34,f:'l',c:C.dim});
+  b.p(rect(560,310,480,440),C.chalk,3);
+  b.p(rect(590,340,420,160),C.yel,3.5);
+  b.t(800,415,'Metadata',{size:56,c:C.yel,a:'middle',wt:700});
+  b.t(800,465,'required',{size:30,a:'middle',f:'l'}).w(250);
+  b.p(dashRect(590,540,420,180),C.dim,2.5);
+  b.t(800,620,'Content',{size:56,a:'middle',wt:700});
+  b.t(800,670,'optional',{size:30,a:'middle',f:'l',c:C.dim}).w(250);
+  b.p(arrow(390,420,570,420),C.yel,3);
+  b.t(280,432,'identity',{size:48,a:'middle',c:C.yel,wt:700});
+  b.p(arrow(1220,630,1030,630),C.cy,3);
+  b.t(1320,642,'payload',{size:48,a:'middle',c:C.cy,wt:700});
+},
+/* 4 · metadata */
+b => {
+  head2(b,'Anatomy','Metadata: the descriptive heart','a standard Mikup object, always present');
+  b.p(rect(170,300,570,460),C.yel,3.5);
+  b.t(205,355,'name: app',{size:32,f:'l'});
+  b.t(205,398,'type: MetadataObj',{size:32,f:'l',c:C.dim}).w(200);
+  b.t(205,465,'props:',{size:34,f:'l',c:C.yel,wt:700});
+  b.t(320,465,'always there, for every Resource',{size:26,f:'l',c:C.dim});
+  b.t(240,510,'uuid, type, permissions,',{size:30,f:'l'});
+  b.t(240,550,'created, owner, modified,',{size:30,f:'l'});
+  b.t(240,590,'contentPath, contentFormat, …',{size:30,f:'l'}).w(200);
+  b.t(205,660,'attrs:',{size:34,f:'l',c:C.cy,wt:700});
+  b.t(320,660,'specific to this Resource',{size:26,f:'l',c:C.dim});
+  b.t(240,705,'xxxx, yyy',{size:30,f:'l'}).w(250);
+  b.p(arrow(760,520,840,520),C.chalk,3);
+  b.p(gear(930,520,68,10),C.chalk,3);
+  b.t(930,420,'understands it',{size:34,a:'middle',f:'l',c:C.grn});
+  b.t(930,645,'the system',{size:36,a:'middle'}).w(250);
+  [[420],[520],[620]].forEach(([y]) => {
+    b.p(arrow(1010,520,1235,y,4,16),C.yel,2.5);
+    b.p(rect(1250,y-28,130,56,1.5),C.chalk,2.5);
+  });
+  b.t(1315,740,'and routes it',{size:40,a:'middle',c:C.yel,wt:700});
+},
+/* 5 · content */
+b => {
+  head2(b,'Anatomy','Content: the payload it carries','optional, and in one of two forms');
+  b.p(doc(290,320,240,300),C.chalk,3);
+  b.t(410,480,'{ }',{size:92,c:C.yel,a:'middle',wt:700});
+  b.p(rect(318,540,82,44,1),C.dim,2).t(359,572,'JSON',{size:26,a:'middle',f:'l'});
+  b.t(418,572,'or',{size:24,a:'middle',f:'l',c:C.dim});
+  b.p(rect(436,540,82,44,1),C.dim,2).t(477,572,'YAML',{size:26,a:'middle',f:'l'});
+  b.t(410,690,'structured data',{size:46,a:'middle',wt:700});
+  b.t(410,738,'a standard Mikup object',{size:30,a:'middle',f:'l',c:C.dim}).w(250);
+  b.p(line(800,310,800,440,3),C.dim,2).p(line(800,560,800,720,3),C.dim,2);
+  b.t(800,515,'or',{size:50,a:'middle',c:C.dim}).w(200);
+  b.t(1170,370,'0100 1101 1101 0010 0110 …',{size:36,a:'middle',f:'l',c:C.cy});
+  b.p(arrow(1000,400,1000,460,1,14),C.cy,2.5).p(arrow(1170,400,1170,460,1,14),C.cy,2.5).p(arrow(1340,400,1340,460,1,14),C.cy,2.5);
+  b.p(doc(955,480,90,115),C.chalk,3).t(1000,560,'PDF',{size:30,a:'middle',f:'l'});
+  b.p(picture(1110,490,120,95),C.chalk,3);
+  b.p(wave(1280,537,120,34),C.chalk,3);
+  b.t(1170,690,'byte stream',{size:46,a:'middle',wt:700,c:C.cy});
+  b.t(1170,738,'a document, an image, an audio file',{size:30,a:'middle',f:'l',c:C.dim});
+},
+/* 6 · three verbs */
+b => {
+  head2(b,'Definition','three verbs bring it to life','the definition cycle of every Resource',true);
+  [[330,'Qualify','FQN','give it a name'],[800,'Persist','Repository','decide how to store it'],[1270,'Process','Processors','elaborate it, if needed']].forEach(([x,v,r,h],i) => {
+    b.t(x,345,String(i+1),{size:34,a:'middle',f:'l',c:C.dim});
+    b.p(i===2 ? dashEll(x,450,140,72) : ell(x,450,140,72),i===2?C.cy:C.yel,3.5);
+    b.t(x,468,v,{size:56,a:'middle',wt:700,c:i===2?C.cy:C.yel});
+    b.p(arrow(x,535,x,615,2,16),C.chalk,2.5);
+    b.t(x,670,r,{size:46,a:'middle',wt:700});
+    b.t(x,718,h,{size:30,a:'middle',f:'l',c:C.dim}).w(200);
+    if(i<2) b.p(arrow(x+150,450,x+320,450,4,18),C.chalk,3);
+  });
+},
+/* 7 · qualify */
+b => {
+  head2(b,'1 · Qualify','give it a name','a unique, absolute Fully Qualified Name');
+  b.t(800,330,'[prefix:]resPath[@resParams][.selectors][.extension][?params]',{size:34,a:'middle',f:'l',c:C.dim}).w(300);
+  const parts = [
+    ['repo/s3:', C.dim, 'prefix', 400],
+    ['app/res', C.yel, 'resPath', 700],
+    ['@rp1/rp2', C.red, 'resParams', 400],
+    ['.s1.s2', C.chalk, 'selectors', 400],
+    ['.ext', C.cy, 'extension', 400],
+    ['?p1=v1&p2=v2', C.grn, 'params', 400]
+  ];
+  const SZ = 50, GAP = 6;
+  const ws = parts.map(([s,,,wt]) => meas(s,SZ,'l',wt));
+  const tot = ws.reduce((a,c)=>a+c,0) + GAP*(parts.length-1);
+  let x = 830 - tot/2;
+  const x0 = x;
+  b.p(poly([[x0-30,440],[x0+tot+35,440],[x0+tot+35,560],[x0-30,560],[x0-80,500]],true,2),C.chalk,3);
+  b.p(ell(x0-45,500,9,9),C.chalk,2.5).w(150);
+  const xs = [];
+  parts.forEach(([s,c,,wt],i) => { xs.push(x); b.t(x,518,s,{size:SZ,f:'l',c,wt}); x += ws[i] + GAP; });
+  b.w(250);
+  parts.forEach(([s,c,lab],i) => {
+    const a = xs[i]+2, z = xs[i]+ws[i]-2, m = (a+z)/2, low = i%2===1;
+    b.p(poly([[a,585],[a,598],[z,598],[z,585]],false,.6),c,2.2);
+    if(low) b.p(line(m,602,m,640,.5),c,1.6);
+    b.t(m, low?675:635, lab, {size:28,a:'middle',f:'l',c});
+  });
+  b.t(xs[1]+ws[1]/2,715,'the only required part',{size:26,a:'middle',f:'l',c:C.dim}).w(250);
+  b.t(800,800,'unambiguous across the whole project',{size:38,a:'middle'});
+},
+/* 8 · persist */
+b => {
+  head2(b,'2 · Persist','decide how it is stored','Repositories own the physical storage strategy');
+  b.p(ell(260,520,110,62),C.yel,3.5);
+  b.t(260,535,'Resource',{size:38,a:'middle',c:C.yel,wt:700});
+  b.p(arrow(380,520,540,520),C.chalk,3);
+  b.p(rect(560,420,320,200),C.chalk,3.5);
+  b.t(720,535,'Repository',{size:52,a:'middle',wt:700}).w(250);
+  [[340,'relational database'],[460,'NoSQL'],[580,'file system'],[700,'object storage']].forEach(([y,lab],i) => {
+    b.p(arrow(895,520,1075,y,4,16),C.chalk,2.5);
+    if(i===0) b.p(cyl(1095,y-28,70,48),C.chalk,2.8);
+    if(i===1) b.p(cube(1100,y-22,46),C.chalk,2.8);
+    if(i===2) b.p(folder(1092,y-30,80,56),C.chalk,2.8);
+    if(i===3) b.p(cloud(1132,y,48,30),C.chalk,2.8);
+    b.t(1210,y+12,lab,{size:36,f:'l'});
+  });
+  b.t(800,815,'the Resource stays the same, the storage is a choice',{size:34,a:'middle',f:'l',c:C.dim});
+},
+/* 9 · process */
+b => {
+  head2(b,'3 · Process','elaborate it, if needed','only active Resources reach the Processors');
+  b.p(ell(260,380,105,52),C.dim,3);
+  b.t(260,392,'Resource',{size:34,a:'middle',c:C.dim});
+  b.t(260,470,'it just exists',{size:30,a:'middle',f:'l',c:C.dim}).w(200);
+  b.p(ell(260,610,105,52),C.yel,3.5);
+  b.t(260,622,'Resource',{size:34,a:'middle',c:C.yel,wt:700});
+  b.t(260,700,'it has work to do',{size:30,a:'middle',f:'l'}).w(200);
+  b.p(arrow(375,600,590,560),C.yel,3);
+  b.t(775,390,'Processors',{size:50,a:'middle',c:C.cy,wt:700});
+  b.p(rect(610,420,330,250),C.cy,3.5);
+  b.p(gear(730,535,52,10),C.yel,3).p(gear(835,595,36,8),C.chalk,3).w(200);
+  [[455,'business logic'],[555,'transformation'],[655,'external systems']].forEach(([y],i) => b.p(arrow(955,545,1105,y,4,14),C.chalk,2.5));
+  b.p(doc(1125,420,56,70),C.chalk,2.8);
+  b.p(rect(1118,535,38,38,1),C.chalk,2.8).p(ell(1188,554,19,19),C.chalk,2.8);
+  b.p(ell(1135,655,13,13),C.yel,3).p(line(1148,650,1180,628,1),C.yel,2.5).p(line(1149,660,1181,682,1),C.yel,2.5).p(ell(1187,623,7,7),C.yel,2.5).p(ell(1188,687,7,7),C.yel,2.5);
+  b.t(1240,467,'business logic',{size:36,f:'l'});
+  b.t(1240,567,'transformation',{size:36,f:'l'});
+  b.t(1240,667,'external systems',{size:36,f:'l'});
+  b.t(800,815,'optional: it comes into play only when there is something to do',{size:34,a:'middle',f:'l',c:C.dim});
+},
+/* 10 · domain scripting */
+b => {
+  head2(b,'In practice','domain scripting','acquire a Resource, change it, save it back');
+  b.p(rect(200,290,1050,450,2),C.chalk,3);
+  b.p(line(200,335,1250,335,1),C.dim,1.5);
+  b.p(ell(230,313,7,7),C.red,2).p(ell(255,313,7,7),C.yel,2).p(ell(280,313,7,7),C.grn,2);
+  const S=38, X=240;
+  code(b,X,410,[['Resource',C.cy],[' res',C.red],[' = Resource.resolve(',C.chalk],['"users/123"',C.yel],[', context)',C.chalk]],S);
+  code(b,X,475,[['var',C.dim],[' metadata',C.red],[' = res.getMetaData()',C.chalk]],S);
+  code(b,X,540,[['var',C.dim],[' content',C.red],[' = res.getContent()',C.chalk]],S); b.w(250);
+  code(b,X,605,[['…',C.dim],['  // your domain logic here',C.dim]],S); b.w(250);
+  code(b,X,680,[['Resource.save(',C.chalk],['"users/123"',C.yel],[', metadata, content, context);',C.chalk]],S); b.w(250);
+  b.p(poly([[1270,378],[1290,378],[1290,552],[1270,552]],false,.6),C.yel,2.5);
+  b.t(1315,477,'acquire',{size:40,c:C.yel,wt:700});
+  b.p(poly([[1270,578],[1290,578],[1290,618],[1270,618]],false,.4),C.cy,2.5);
+  b.t(1315,610,'modify',{size:40,c:C.cy,wt:700});
+  b.p(poly([[1270,652],[1290,652],[1290,692],[1270,692]],false,.4),C.grn,2.5);
+  b.t(1315,684,'save',{size:40,c:C.grn,wt:700}).w(250);
+  b.t(800,810,'one FQN to find it, one FQN to store it',{size:36,a:'middle',f:'l',c:C.dim});
+},
+/* 11 · other resources */
+b => {
+  head2(b,'In practice','anything can be a Resource','same call, very different things');
+  const S=36, X=330;
+  const rows = [
+    [370, '"query/mgv001@main/v2"', 'the result of a query on a generic DataSource', () => b.p(cyl(195,332,70,55),C.chalk,2.8)],
+    [550, '"asset/images/foto_01"', 'a generic asset', () => b.p(picture(185,510,95,75),C.chalk,2.8)],
+    [730, '"commands/invoices/print"', 'printing an invoice', () => { b.p(doc(195,682,60,78),C.chalk,2.8); b.p(gear(262,742,20,7),C.yel,2.5); }]
+  ];
+  rows.forEach(([y,fqn,desc,icon]) => {
+    icon();
+    code(b,X,y,[['Resource',C.cy],[' res',C.red],[' = Resource.resolve(',C.chalk],[fqn,C.yel],[', context);',C.chalk]],S);
+    b.t(X,y+45,desc,{size:30,f:'l',c:C.dim}).w(250);
+  });
+},
+/* 12 · at a glance */
+b => {
+  b.t(800,120,'A Resource at a glance',{size:62,a:'middle',wt:600}).w(250);
+  // resource
+  b.p(dashRect(470,390,660,230),C.red,3);
+  b.t(800,442,'Resource',{size:42,a:'middle',c:C.red,wt:700});
+  b.p(rect(510,470,260,100),C.yel,4.5);
+  b.t(640,533,'Metadata',{size:40,a:'middle',c:C.yel,wt:700});
+  b.p(rect(830,470,260,100),C.chalk,3);
+  b.t(960,533,'Content',{size:40,a:'middle',wt:700}).w(250);
+  // input
+  b.t(225,455,'FQN',{size:44,a:'middle',c:C.yel,wt:700});
+  b.t(225,512,'[ Obj / OV / OVL / Stream ]',{size:30,a:'middle',f:'l'});
+  b.p(arrow(400,505,460,505,1,16),C.chalk,3).w(200);
+  // repository
+  b.p(arrow(800,388,800,275,2,18),C.chalk,3);
+  b.p(dashRect(640,185,320,80),C.cy,3);
+  b.t(800,238,'Repository',{size:42,a:'middle',c:C.cy,wt:700}).w(200);
+  // processor
+  b.p(arrow(1092,520,1300,520,3,18),C.chalk,3);
+  b.p(rect(1310,483,220,75),C.grn,3);
+  b.t(1420,533,'Processor',{size:38,a:'middle',c:C.grn,wt:700}).w(200);
+  // outputs
+  b.p(line(640,572,640,690,1),C.chalk,3).p(arrow(640,690,300,690,3,18),C.chalk,3);
+  b.t(560,678,'resolve',{size:30,a:'middle',f:'l',c:C.dim});
+  b.t(175,700,'MKO (OV)',{size:36,a:'middle'}).w(150);
+  b.p(line(960,572,960,770,1),C.chalk,3).p(arrow(960,770,300,770,3,18),C.chalk,3);
+  b.t(175,780,'Stream',{size:36,a:'middle'}).w(150);
+  b.p(line(1420,560,1420,770,1),C.grn,3).p(arrow(1420,770,985,770,3,18),C.grn,3);
+}
+];
+const TITLES = ['Manifest','First-class citizen','Two ways to understand it','Anatomy','Metadata','Content','Three verbs','Qualify','Persist','Process','Domain scripting','Other Resources','At a glance'];
+
+
+/* ---------- clock & tweens (pausable, speed-aware) ---------- */
+let paused=false, speed=2, vt=0, last=performance.now();
+const tweens = new Set();
+function loop(t){
+  const dt = Math.min(64, t-last); last = t;
+  if(!paused) vt += dt*speed;
+  for(const tw of [...tweens]){
+    const p = Math.min(1, (vt-tw.t0)/tw.dur);
+    tw.fn(p);
+    if(p>=1){ tweens.delete(tw); tw.res(true); }
+  }
+  requestAnimationFrame(loop);
+}
+requestAnimationFrame(loop);
+function tween(dur, fn=()=>{}){ return new Promise(res => { const tw={t0:vt,dur:Math.max(1,dur),fn,res}; tweens.add(tw); fn(0); }); }
+function cancelAll(){ for(const tw of tweens) tw.res(false); tweens.clear(); }
+
+const movePencil = (x,y) => pencil.setAttribute('transform',`translate(${f(x)},${f(y)})`);
+let pencilOn = false;
+let manual = false, advanceRes = null;
+let extraHold = 1;
+const showPencil = v => { pencil.style.opacity = (v && pencilOn) ? 1 : 0; };
+
+/* ---------- playing ops ---------- */
+let gen=0, cur=0, uid=0, finished=false, started=false;
+async function playOp(op, grp, g){
+  if(g!==gen) return false;
+  if(op.k==='w'){ showPencil(false); return tween(op.ms); }
+  if(op.k==='p'){
+    const el = document.createElementNS(NS,'path');
+    el.setAttribute('d',op.d); el.setAttribute('stroke',op.c); el.setAttribute('stroke-width',op.w);
+    grp.appendChild(el);
+    const L = el.getTotalLength();
+    el.style.strokeDasharray = `${L} ${L+4}`; el.style.strokeDashoffset = L;
+    showPencil(true);
+    const ok = await tween(Math.min(1600, Math.max(160, L/0.9)), p => {
+      el.style.strokeDashoffset = L*(1-p);
+      const pt = el.getPointAtLength(L*p); movePencil(pt.x, pt.y);
+    });
+    if(ok) el.style.strokeDasharray = 'none';
+    return ok;
+  }
+  if(op.k==='t'){
+    const el = document.createElementNS(NS,'text');
+    el.setAttribute('x',op.x); el.setAttribute('y',op.y);
+    el.setAttribute('text-anchor', op.a||'start');
+    el.setAttribute('font-family', FONT[op.f||'h']);
+    el.setAttribute('font-size', op.size||40);
+    el.setAttribute('font-weight', op.wt||500);
+    el.setAttribute('fill', op.c||C.chalk);
+    el.textContent = op.s;
+    grp.appendChild(el);
+    const bb = el.getBBox();
+    const id = 'clip'+(++uid);
+    const cp = document.createElementNS(NS,'clipPath'); cp.id = id;
+    const r = document.createElementNS(NS,'rect');
+    r.setAttribute('x',bb.x-12); r.setAttribute('y',bb.y-16); r.setAttribute('height',bb.height+32); r.setAttribute('width',0);
+    cp.appendChild(r); grp.appendChild(cp);
+    el.setAttribute('clip-path',`url(#${id})`);
+    showPencil(true);
+    const n = op.s.length;
+    const ok = await tween(Math.min(2600, Math.max(300, bb.width/0.6)), p => {
+      r.setAttribute('width', (bb.width+24)*p);
+      movePencil(bb.x + bb.width*p, bb.y + bb.height*(.55 + .2*Math.sin(p*n*2.3)));
+    });
+    if(!ok) return false;
+    if(op.u){
+      const y = op.y + (op.size||40)*.17, x0 = bb.x-6, x1 = bb.x+bb.width+6, pts=[];
+      for(let i=0;i<=5;i++) pts.push([x0+(x1-x0)*i/5, y+j(3)]);
+      return playOp({k:'p', d:poly(pts,false,2), c:op.u, w:3.5}, grp, g);
+    }
+    return true;
+  }
+  return true;
+}
+
+async function runScene(i){
+  const g = ++gen; cur = i; finished = false; updateUI();
+  layer.innerHTML = '';
+  const grp = document.createElementNS(NS,'g');
+  grp.setAttribute('filter','url(#pencilFx)');
+  layer.appendChild(grp);
+  const sid = ORDER[i];
+  seed(sid*977 + 13);
+  const b = B(); SCENES[sid](b);
+  if(!await tween(350) || g!==gen) return;
+  for(const op of b.ops){
+    if(!await playOp(op, grp, g) || g!==gen) return;
+    if(!await tween(60) || g!==gen) return;
+  }
+  showPencil(false);
+  if(cur >= ORDER.length-1){ finished = true; updateUI(); showBar(); return; }
+  if(manual){ const ok = await new Promise(r => { advanceRes = r; }); if(!ok || g!==gen) return; }
+  else if(!await tween(2600 + extraHold*1000*speed) || g!==gen) return;
+  if(!await tween(700, p => { grp.style.opacity = 1-p; }) || g!==gen) return;
+  runScene(cur+1);
+}
+function advance(){
+  if(!started || finished) return;
+  if(advanceRes){ const r = advanceRes; advanceRes = null; r(true); }
+  else jump(cur+1);
+}
+function jump(i){ if(!started) return start(i); if(advanceRes){ const r = advanceRes; advanceRes = null; r(false); } cancelAll(); paused = false; showPencil(false); runScene(Math.max(0, Math.min(ORDER.length-1, i))); }
+
+/* ---------- controls ---------- */
+const bar = document.getElementById('bar'), stage = document.getElementById('stage');
+const playBtn = document.getElementById('play'), speedBtn = document.getElementById('speed');
+const dots = document.getElementById('dots');
+let ORDER = [], mfStart = true, mfEnd = true;
+function buildDots(){
+  dots.innerHTML = '';
+  ORDER.forEach((sid,i) => { const t = TITLES[sid]; const d=document.createElement('button'); d.title=t; d.setAttribute('aria-label',`Scene ${i+1}: ${t}`); d.onclick=()=>jump(i); dots.appendChild(d); });
+}
+function buildOrder(){
+  const sid = ORDER[cur], wasEnd = ORDER.length>0 && cur===ORDER.length-1;
+  const mid = []; for(let k=1;k<SCENES.length;k++) mid.push(k);
+  ORDER = [...(mfStart?[0]:[]), ...mid, ...(mfEnd?[0]:[])];
+  if(sid !== undefined){
+    let ni = (sid===0 && wasEnd) ? ORDER.lastIndexOf(0) : ORDER.indexOf(sid);
+    if(ni < 0) ni = (sid===0 && !wasEnd) ? -1 : ORDER.length-1;
+    cur = ni;
+  }
+  buildDots();
+  if(typeof updateUI === 'function') updateUI();
+}
+buildOrder();
+function updateUI(){
+  [...dots.children].forEach((d,i) => d.classList.toggle('on', i===cur));
+  const icon = !started ? '▶' : finished ? '↺' : (paused ? '▶' : '❚❚');
+  playBtn.textContent = icon;
+  playBtn.setAttribute('aria-label', !started ? 'Start' : finished ? 'Restart' : (paused ? 'Resume' : 'Pause'));
+}
+function togglePlay(){
+  if(!started) return start();
+  if(finished) return jump(0);
+  paused = !paused; updateUI(); showBar();
+}
+let hideT;
+function showBar(){ /* the toolbar now appears only on hover near the bottom edge */ }
+const setBar = v => bar.classList.toggle('hide', !v);
+function nearBar(y){ const r = bar.getBoundingClientRect(); return y > r.top - 50; }
+function onPointer(y){
+  const near = nearBar(y);
+  setBar(near);
+  stage.classList.remove('nocursor');
+  clearTimeout(hideT);
+  hideT = setTimeout(() => { if(!bar.matches(':hover')) stage.classList.add('nocursor'); }, 2000);
+}
+const SPEEDS = [.75,1,1.5,2,2.5,3];
+speedBtn.onclick = () => { speed = SPEEDS[(SPEEDS.indexOf(speed)+1)%SPEEDS.length]; speedBtn.textContent = speed+'×'; showBar(); };
+playBtn.onclick = togglePlay;
+updateUI();
+document.getElementById('prev').onclick = () => jump(cur-1);
+document.getElementById('next').onclick = () => jump(cur+1);
+document.getElementById('restart').onclick = () => jump(0);
+function toggleFs(){ try{ if(document.fullscreenElement) document.exitFullscreen(); else document.documentElement.requestFullscreen(); }catch(e){} }
+document.getElementById('fs').onclick = toggleFs;
+const pencilChk = document.getElementById('pencilChk');
+function setPencil(v){ pencilOn = v; pencilChk.checked = v; if(!v) pencil.style.opacity = 0; showBar(); }
+pencilChk.addEventListener('change', () => setPencil(pencilChk.checked));
+const manualChk = document.getElementById('manualChk');
+function setManual(v){
+  manual = v; manualChk.checked = v;
+  if(!v && advanceRes){ const r = advanceRes; advanceRes = null; r(true); }
+  showBar();
+}
+manualChk.addEventListener('change', () => setManual(manualChk.checked));
+document.getElementById('mfStartChk').addEventListener('change', e => { mfStart = e.target.checked; buildOrder(); });
+document.getElementById('mfEndChk').addEventListener('change', e => { mfEnd = e.target.checked; buildOrder(); });
+const holdIn = document.getElementById('holdIn');
+holdIn.addEventListener('input', () => { const v = parseFloat(holdIn.value); extraHold = isFinite(v) ? Math.max(0, Math.min(60, v)) : 0; });
+holdIn.addEventListener('change', () => { holdIn.value = extraHold; });
+stage.addEventListener('mousemove', e => onPointer(e.clientY), {passive:true});
+stage.addEventListener('mouseleave', () => setBar(false));
+stage.addEventListener('touchstart', e => { const t = e.touches[0]; if(t) onPointer(t.clientY); }, {passive:true});
+document.addEventListener('keydown', e => {
+  if(e.target && e.target.id === 'holdIn'){ if(e.key==='Enter' || e.key==='Escape') e.target.blur(); return; }
+  if(e.key===' '){ e.preventDefault(); togglePlay(); }
+  else if(e.key==='ArrowRight') jump(cur+1);
+  else if(e.key==='ArrowLeft') jump(cur-1);
+  else if(e.key==='r'||e.key==='R') jump(0);
+  else if(e.key==='f'||e.key==='F') toggleFs();
+  else if(e.key==='p'||e.key==='P') setPencil(!pencilOn);
+  else if(e.key==='m'||e.key==='M') setManual(!manual);
+  else if(e.key==='Enter'){ if(e.target && e.target.closest && e.target.closest('button')) return; e.preventDefault(); advance(); }
+});
+
+async function start(at){
+  if(started) return; started = true;
+  const first = Number.isInteger(at) ? Math.max(0, Math.min(ORDER.length-1, at)) : 0;
+  document.getElementById('start').remove();
+  try{
+    await Promise.race([
+      Promise.all([document.fonts.load('600 60px Caveat'), document.fonts.load('40px "Patrick Hand"')]),
+      new Promise(r => setTimeout(r, 2500))
+    ]);
+  }catch(e){}
+  showBar();
+  runScene(first);
+}
+document.getElementById('startBtn').onclick = () => start();
+document.getElementById('startBtn').focus();
+})();
+</script>
+</body>
