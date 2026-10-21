@@ -590,9 +590,41 @@ b => {
   b.p(line(945,572,945,770,1),C.chalk,3).p(arrow(945,770,350,770,3,18),C.chalk,3);
   b.t(430,756,'Stream',{size:30,a:'middle',f:'l'});
   b.p(line(1350,560,1350,770,1),C.grn,3).p(arrow(1350,770,968,770,3,18),C.grn,3);
+},
+/* 14 · in practice: HTTP */
+b => {
+  head2(b,'In practice','a Resource over HTTP','any client, one Connector, one Resource manager');
+  // clients
+  b.p(rect(80,265,230,70),C.chalk,2.8).t(195,310,'Browser',{size:32,a:'middle'});
+  b.p(rect(80,350,230,70),C.chalk,2.8).t(195,395,'client app',{size:32,a:'middle'});
+  b.p(rect(80,435,230,70),C.chalk,2.8).t(195,480,'curl',{size:32,a:'middle',f:'l'});
+  b.p(poly([[322,270],[336,270],[336,500],[322,500]],false,.6),C.dim,2.2).w(200);
+  b.p(arrow(345,360,560,360,2,18),C.chalk,3).t(452,342,'request',{size:28,a:'middle',f:'l'});
+  b.p(arrow(560,420,345,420,2,18),C.chalk,3).t(452,455,'response',{size:28,a:'middle',f:'l'}).w(200);
+  // connector
+  b.p(rect(575,300,300,160),C.org,3.5);
+  b.t(725,372,'HTTP Connector',{size:36,a:'middle',c:C.org,wt:700});
+  b.t(725,412,'translates HTTP',{size:26,a:'middle',f:'l',c:C.dim}).w(200);
+  b.p(arrow(890,360,1105,360,2,18),C.chalk,3).t(997,342,'FQN [payload]',{size:26,a:'middle',f:'l'});
+  b.p(arrow(1105,420,890,420,2,18),C.chalk,3).t(997,455,'MKO / Stream',{size:26,a:'middle',f:'l'}).w(200);
+  // mikup
+  b.p(dashRect(1120,280,400,200),C.red,3);
+  b.t(1320,355,'Mikup',{size:48,a:'middle',c:C.red,wt:700});
+  b.t(1320,395,'the Resource manager',{size:28,a:'middle',f:'l'});
+  b.p(ell(1255,440,30,16),C.yel,2.5).p(ell(1320,440,30,16),C.yel,2.5).p(ell(1385,440,30,16),C.yel,2.5).w(250);
+  // terminal
+  b.p(rect(80,545,1440,250,2),C.chalk,3);
+  b.p(line(80,585,1520,585,1),C.dim,1.5);
+  b.p(ell(108,565,7,7),C.red,2).p(ell(133,565,7,7),C.yel,2).p(ell(158,565,7,7),C.grn,2);
+  b.t(1495,574,'the same Resources, over HTTP',{size:24,a:'end',f:'l',c:C.dim}).w(150);
+  const S=26, X=110, H='"http://localhost:8888/';
+  code(b,X,632,[['curl -v',C.chalk],[' -XPOST',C.cy],[' '+H,C.dim],['auth/login"',C.yel]],S); b.w(150);
+  code(b,X,677,[['curl -v',C.chalk],[' -XGET',C.cy],[' '+H,C.dim],['asset/images/foto_01"',C.yel],[" -H 'Authorization: Bearer SDFKRKSUJTLYKEÒLRKÒLTÒLEJQIUER'",C.dim]],S); b.w(150);
+  code(b,X,722,[['curl -v',C.chalk],[' -XPOST',C.cy],[' '+H,C.dim],['query/mgv001@main/v2.json"',C.yel]],S); b.w(150);
+  code(b,X,767,[['curl -v',C.chalk],[' -XPOST',C.cy],[' '+H,C.dim],['commands/invoices/print"',C.yel]],S);
 }
 ];
-const TITLES = ['Manifest','First-class citizen','Two ways to understand it','Anatomy','Metadata','Content','Three verbs','Qualify','Persist','Process','Domain scripting','Other Resources','At a glance','Where is the Web'];
+const TITLES = ['Manifest','First-class citizen','Two ways to understand it','Anatomy','Metadata','Content','Three verbs','Qualify','Persist','Process','Domain scripting','Other Resources','At a glance','Where is the Web','HTTP in practice'];
 
 
 /* ---------- clock & tweens (pausable, speed-aware) ---------- */
