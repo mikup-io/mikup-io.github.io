@@ -336,15 +336,28 @@ b => {
   b.t(205,660,'attrs:',{size:34,f:'l',c:C.cy,wt:700});
   b.t(320,660,'specific to this Resource',{size:26,f:'l',c:C.dim});
   b.t(240,705,'xxxx, yyy',{size:30,f:'l'}).w(250);
-  b.p(arrow(760,520,840,520),C.chalk,3);
-  b.p(gear(930,520,68,10),C.chalk,3);
-  b.t(930,420,'understands it',{size:34,a:'middle',f:'l',c:C.grn});
-  b.t(930,645,'the system',{size:36,a:'middle'}).w(250);
-  [[420],[520],[620]].forEach(([y]) => {
-    b.p(arrow(1010,520,1235,y,4,16),C.yel,2.5);
-    b.p(rect(1250,y-28,130,56,1.5),C.chalk,2.5);
-  });
-  b.t(1315,740,'and routes it',{size:40,a:'middle',c:C.yel,wt:700});
+  // 1 · catalog
+  b.p(arrow(760,440,985,370,3,18),C.chalk,3);
+  b.p(rect(1000,300,180,130),C.chalk,3);
+  b.p(line(1000,343,1180,343,1),C.chalk,2.5).p(line(1000,386,1180,386,1),C.chalk,2.5);
+  [322,365,408].forEach(y => b.p(line(1075,y,1105,y,.5),C.yel,3));
+  b.t(1210,350,'1. catalogs',{size:38,c:C.yel,wt:700});
+  b.t(1210,390,'the Resources',{size:32,f:'l'});
+  b.t(1210,425,'by their metadata',{size:28,f:'l',c:C.dim}).w(300);
+  // 2 · search
+  b.p(arrow(760,560,945,590,3,18),C.chalk,3);
+  b.p(ell(1000,595,42,42),C.grn,3.5).p(line(1030,625,1058,653,1),C.grn,4);
+  b.p(person(880,665,.42),C.cy,2.8);
+  b.t(880,790,'user profile',{size:26,a:'middle',f:'l',c:C.cy});
+  b.p(arrow(905,680,968,632,2,14),C.cy,2.5);
+  b.t(1045,755,'?type=…',{size:28,a:'middle',f:'l',c:C.grn});
+  b.t(1045,790,'search parameters',{size:26,a:'middle',f:'l',c:C.grn});
+  b.p(arrow(1042,725,1022,650,2,14),C.grn,2.5).w(200);
+  b.p(arrow(1065,595,1190,595,3,18),C.yel,3);
+  b.p(rect(1205,535,190,120),C.chalk,3);
+  [550,588,626].forEach(y => b.p(rect(1222,y,156,24,1),C.yel,2.2));
+  b.t(1300,700,'2. searches the Resources',{size:32,a:'middle',c:C.yel,wt:700});
+  b.t(1300,738,'by user profile and parameters',{size:28,a:'middle',f:'l',c:C.dim});
 },
 /* 5 · content */
 b => {
