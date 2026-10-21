@@ -153,7 +153,7 @@
 const NS = 'http://www.w3.org/2000/svg';
 const layer = document.getElementById('layer');
 const pencil = document.getElementById('pencil');
-const C = { chalk:'#ecebe6', dim:'#8f8e88', yel:'#f4d35e', cy:'#7fd3e6', red:'#ff7a6b', grn:'#9be38f' };
+const C = { chalk:'#ecebe6', dim:'#8f8e88', yel:'#f4d35e', cy:'#7fd3e6', red:'#ff7a6b', grn:'#9be38f', org:'#f5a35c' };
 const FONT = { h:'Caveat, "Patrick Hand", cursive', l:'"Patrick Hand", Caveat, cursive' };
 
 /* ---------- seeded randomness for the hand-drawn wobble ---------- */
@@ -559,9 +559,40 @@ b => {
   b.p(line(960,572,960,770,1),C.chalk,3).p(arrow(960,770,300,770,3,18),C.chalk,3);
   b.t(175,780,'Stream',{size:36,a:'middle'}).w(150);
   b.p(line(1420,560,1420,770,1),C.grn,3).p(arrow(1420,770,985,770,3,18),C.grn,3);
+},
+/* 13 · where is the web */
+b => {
+  head2(b,'Where is the Web in all this?','When does a Resource become web?','when a Connector exposes it');
+  // connectors
+  b.p(dashRect(50,300,290,490),C.org,3);
+  b.t(195,345,'Connectors',{size:38,a:'middle',c:C.org,wt:700});
+  b.p(rect(85,380,220,78),C.org,3).t(195,432,'HTTP',{size:40,a:'middle',wt:700});
+  b.p(rect(85,485,220,78),C.org,3).t(195,537,'FTP',{size:40,a:'middle',wt:700});
+  b.p(dashRect(85,590,220,78),C.dim,2.5).t(195,640,'… and more',{size:32,a:'middle',f:'l',c:C.dim}).w(250);
+  // in
+  b.p(arrow(345,500,505,500,2,18),C.chalk,3);
+  b.t(425,478,'FQN [payload]',{size:28,a:'middle',f:'l'});
+  // resource
+  b.p(dashRect(520,390,560,230),C.red,3);
+  b.t(800,440,'Resource',{size:40,a:'middle',c:C.red,wt:700});
+  b.p(rect(550,470,230,100),C.yel,4.5).t(665,533,'Metadata',{size:38,a:'middle',c:C.yel,wt:700});
+  b.p(rect(830,470,230,100),C.chalk,3).t(945,533,'Content',{size:38,a:'middle',wt:700}).w(200);
+  // repository
+  b.p(arrow(800,388,800,328,1,16),C.chalk,3);
+  b.p(dashRect(650,255,300,66),C.cy,3).t(800,300,'Repository',{size:38,a:'middle',c:C.cy,wt:700});
+  // processor
+  b.p(arrow(1062,520,1235,520,2,18),C.chalk,3);
+  b.p(rect(1245,483,210,75),C.grn,3).t(1350,533,'Processor',{size:36,a:'middle',c:C.grn,wt:700}).w(200);
+  // back to the connectors
+  b.p(line(665,572,665,690,1),C.chalk,3).p(arrow(665,690,350,690,3,18),C.chalk,3);
+  b.t(590,678,'resolve',{size:28,a:'middle',f:'l',c:C.dim});
+  b.t(430,676,'MKO (OV)',{size:30,a:'middle',f:'l'});
+  b.p(line(945,572,945,770,1),C.chalk,3).p(arrow(945,770,350,770,3,18),C.chalk,3);
+  b.t(430,756,'Stream',{size:30,a:'middle',f:'l'});
+  b.p(line(1350,560,1350,770,1),C.grn,3).p(arrow(1350,770,968,770,3,18),C.grn,3);
 }
 ];
-const TITLES = ['Manifest','First-class citizen','Two ways to understand it','Anatomy','Metadata','Content','Three verbs','Qualify','Persist','Process','Domain scripting','Other Resources','At a glance'];
+const TITLES = ['Manifest','First-class citizen','Two ways to understand it','Anatomy','Metadata','Content','Three verbs','Qualify','Persist','Process','Domain scripting','Other Resources','At a glance','Where is the Web'];
 
 
 /* ---------- clock & tweens (pausable, speed-aware) ---------- */
