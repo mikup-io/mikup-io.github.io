@@ -59,8 +59,11 @@ Presentations use `definePresentation()` and own their metadata, playlist, and p
 
 ```js
 export default definePresentation({
-  id: 'product-overview',
+  name: 'product-overview',
+  id: 'overview',
+  folder: 'events',
   title: 'Mikup - Product Overview',
+  subtitle: 'A concise overview of Mikup.',
   publishedAt: '2026-10-23',
   ariaLabel: 'Animated Mikup product overview',
   playlist: [
@@ -73,7 +76,7 @@ export default definePresentation({
 });
 ```
 
-`title` is the single source of truth for the presentation name. It is used by the start screen and document title; the build derives the catalog title from it. Do not duplicate it in the registry. `publishedAt` is an ISO `YYYY-MM-DD` date; the catalog displays it and orders presentations newest first.
+`name` matches the presentation source filename without `.js`. `id` determines the generated filename, and `folder` determines its publication directory: the build writes `slides/<folder>/<id>.html`. `title` is the single source of truth for the presentation name. `subtitle` is the supporting description shown in both the catalog and start screen. The build derives all publication metadata and the catalog href from the presentation configuration; do not duplicate them in the registry. `publishedAt` is an ISO `YYYY-MM-DD` date; the catalog and start screen display it, and the catalog orders presentations newest first.
 
 Playlist rules:
 
@@ -93,11 +96,10 @@ Current player defaults are `speed`, `drawMode` (`simple`, `pencil`, or `none`),
 To add a new published presentation:
 
 1. Create `slides/presentations/<id>.js` using the presentation contract.
-2. Add its description and generated HTML href to `slides/presentations/registry.js`.
-3. Add `[<id>, <output-path>]` to `entries` in `scripts/build-slides.mjs`.
-4. If it imports a new episode, add that episode to the builder’s source list and runtime bundle sequence. The current dependency-free builder explicitly lists bundled episodes.
-5. Run `node scripts/build-slides.mjs`.
-6. Open `slides/index.html` and the generated HTML directly from the filesystem.
+2. Add its `name` to `slides/presentations/registry.js`.
+3. If it imports a new episode, add that episode to the builder’s source list and runtime bundle sequence. The current dependency-free builder explicitly lists bundled episodes.
+4. Run `node scripts/build-slides.mjs`.
+5. Open `slides/index.html` and the generated HTML directly from the filesystem.
 
 ## Creating Or Extending Episodes
 
@@ -122,7 +124,7 @@ When adding a scene, add the render function and its stable id to the episode. U
 
 Accept requests in plain language, such as:
 
-- “Create a presentation named `sales-overview` with this description. Include the full Micro App episode and scenes 2, 4, and 5 from Resource.”
+- “Create a presentation named `sales-overview` with this subtitle. Include the full Micro App episode and scenes 2, 4, and 5 from Resource.”
 - “Create an episode about permissions with these scene titles and this narrative.”
 - “Add a slide after Metadata in Resource explaining ownership.”
 
@@ -130,7 +132,7 @@ Ask one concise clarification batch before editing when any of these is missing 
 
 - The target episode or presentation cannot be identified.
 - A requested scene position maps to multiple plausible scenes or the episode order is not known.
-- A new presentation lacks a title, description, or requested episode/scene sequence.
+- A new presentation lacks a name, id, folder, title, subtitle, or requested episode/scene sequence.
 - A new episode or scene lacks its intended message, title, or placement.
 - Content requires factual, visual, asset, or branding decisions that the request does not supply.
 

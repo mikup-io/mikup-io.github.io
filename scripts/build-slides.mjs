@@ -1,4 +1,4 @@
-import { readFile, writeFile } from 'node:fs/promises';
+import { mkdir, readFile, writeFile } from 'node:fs/promises';
 
 const root = new URL('../', import.meta.url);
 const read = path => readFile(new URL(path, root), 'utf8');
@@ -6,10 +6,6 @@ const stripExports = source => source.replaceAll('export ', '');
 const episode = (source, name) => `const ${name} = (() => {\n${stripExports(source).replace(/^import .*;\n/gm, '').replace('default ', 'return ')}\n})();`;
 const config = source => stripExports(source).replace(/^import .*;\n/gm, '').replace('default ', 'const presentation =');
 
-const entries = [
-  ['yt-ep_00', 'yt/ep_00.html'],
-  ['yt-ep_01', 'yt/ep_01.html'],
-];
 const presentationMetadata = {};
 
 const [css, drawing, shell, player, presentation, microApp, resource, manifest, registry] = await Promise.all([
@@ -24,13 +20,21 @@ const [css, drawing, shell, player, presentation, microApp, resource, manifest, 
   read('slides/presentations/registry.js'),
 ]);
 
-for(const [id, output] of entries){
-  const spec = await read(`slides/presentations/${id}.js`);
+const names = [...registry.matchAll(/name: '([^']+)'/g)].map(([, name]) => name);
+for(const name of names){
+  const spec = await read(`slides/presentations/${name}.js`);
+  const id = spec.match(/\n  id: '([^']+)',/);
+  if(!id) throw new Error(`Presentation ${name} has no id`);
+  const folder = spec.match(/\n  folder: '([^']+)',/);
+  if(!folder) throw new Error(`Presentation ${name} has no folder`);
   const title = spec.match(/\n  title: '([^']+)',/);
-  if(!title) throw new Error(`Presentation ${id} has no title`);
+  if(!title) throw new Error(`Presentation ${name} has no title`);
+  const subtitle = spec.match(/\n  subtitle: '([^']+)',/);
+  if(!subtitle) throw new Error(`Presentation ${name} has no subtitle`);
   const publishedAt = spec.match(/\n  publishedAt: '([^']+)',/);
-  if(!publishedAt) throw new Error(`Presentation ${id} has no publishedAt date`);
-  presentationMetadata[id] = { title: title[1], publishedAt: publishedAt[1] };
+  if(!publishedAt) throw new Error(`Presentation ${name} has no publishedAt date`);
+  const output = `${folder[1]}/${id[1]}.html`;
+  presentationMetadata[name] = { title: title[1], subtitle: subtitle[1], publishedAt: publishedAt[1], href: `./${output}` };
   const runtime = [
     stripExports(drawing),
     stripExports(presentation),
@@ -43,7 +47,8 @@ for(const [id, output] of entries){
     'presentation.standalone = true;',
     'mountPresentation(presentation);',
   ].join('\n\n');
-  const html = `<!doctype html>\n<html lang="en">\n<head>\n  <meta charset="utf-8">\n  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">\n  <title>${id}</title>\n  <style>\n${css}\n  </style>\n</head>\n<body>\n  <script>\n${runtime}\n  </script>\n</body>\n</html>\n`;
+  const html = `<!doctype html>\n<html lang="en">\n<head>\n  <meta charset="utf-8">\n  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">\n  <title>${title[1]}</title>\n  <style>\n${css}\n  </style>\n</head>\n<body>\n  <script>\n${runtime}\n  </script>\n</body>\n</html>\n`;
+  await mkdir(new URL('.', new URL(`slides/${output}`, root)), { recursive: true });
   await writeFile(new URL(`slides/${output}`, root), html);
 }
 
@@ -52,18 +57,17 @@ const catalog = `${stripExports(registry)}
 const presentationMetadata = ${JSON.stringify(presentationMetadata)};
 const catalogPresentations = presentations.map(presentation => ({
   ...presentation,
-  ...presentationMetadata[presentation.id],
+  ...presentationMetadata[presentation.name],
 })).sort((a, b) => b.publishedAt.localeCompare(a.publishedAt));
 const formatDate = date => new Intl.DateTimeFormat('en', {
   day: 'numeric', month: 'long', year: 'numeric', timeZone: 'UTC',
 }).format(new Date(date + 'T00:00:00Z'));
 
-document.querySelector('#presentations').innerHTML = catalogPresentations.map(({ title, publishedAt, description, href }) => \`
+document.querySelector('#presentations').innerHTML = catalogPresentations.map(({ title, subtitle, publishedAt, href }) => \`
   <a class="presentation" href="\${href}">
-    <span class="eyebrow">Presentation</span>
     <h2>\${title}</h2>
     <time class="date" datetime="\${publishedAt}">\${formatDate(publishedAt)}</time>
-    <p>\${description}</p>
+    <p>\${subtitle}</p>
     <span class="open">Open</span>
   </a>
 \`).join('');

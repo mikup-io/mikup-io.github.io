@@ -3,8 +3,11 @@ import manifest from '../episodes/manifest.js';
 import microApp from '../episodes/micro-app.js';
 
 export default definePresentation({
-  id: 'yt-ep_00',
+  name: 'yt-ep_00',
+  id: 'ep_00',
+  folder: 'yt',
   title: 'What happens to software in the AI era?',
+  subtitle: 'An introduction to Mikup as a Micro App.',
   publishedAt: '2026-10-23',
   ariaLabel: 'Animated Mikup sketchboard: What happens to software in the AI era?',
   playlist: [
