@@ -329,7 +329,6 @@ b => {
 /* 15 · coming next: MKO */
 b => {
   head2(b,'Coming next','MKO, the Mikup Object','a unified data model, with instances in memory');
-  b.t(1500,110,'next video →',{size:30,a:'end',c:C.dim,f:'l'}).w(150);
   // 1 · scalar or structured
   b.p(rect(380,272,200,58),C.yel,3.5).t(480,312,'Object',{size:36,a:'middle',c:C.yel,wt:700});
   b.p(line(445,332,280,388,2),C.chalk,2.5).p(line(515,332,690,388,2),C.chalk,2.5);
