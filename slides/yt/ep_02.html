@@ -1,0 +1,1273 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>MK Objects and Ontology</title>
+  <style>
+  :root{
+    --bg:#000; --ink:#ecebe6; --ink-dim:#8f8e88; --accent:#f4d35e; --bar:rgba(24,24,24,.78); --bar-line:rgba(236,235,230,.16);
+    color-scheme:dark;
+    box-sizing:border-box;
+    padding-top:env(safe-area-inset-top,0px);
+    padding-bottom:env(safe-area-inset-bottom,0px);
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){ --bg:#000; --ink:#ecebe6; --ink-dim:#8f8e88; --accent:#f4d35e; --bar:rgba(24,24,24,.78); --bar-line:rgba(236,235,230,.16); }
+  }
+  :root[data-theme="dark"]{ --bg:#000; --ink:#ecebe6; --ink-dim:#8f8e88; --accent:#f4d35e; --bar:rgba(24,24,24,.78); --bar-line:rgba(236,235,230,.16); }
+  html{ scroll-padding-top:env(safe-area-inset-top,0px); height:100%; }
+  html,body{ margin:0; height:100%; }
+  *,*::before,*::after{ box-sizing:inherit; }
+  body{ background:var(--bg); color:var(--ink); font-family:"Patrick Hand","Comic Sans MS",cursive,sans-serif; overflow:hidden; }
+  #stage{ position:relative; width:100%; height:100%; background:var(--bg); }
+  #stage.nocursor{ cursor:none; }
+  svg#board{ width:100%; height:100%; display:block; }
+  #layer path{ fill:none; stroke-linecap:round; stroke-linejoin:round; }
+  #pencil{ transition:opacity .25s ease; pointer-events:none; }
+
+  #start{ position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:18px; background:var(--bg); z-index:5; }
+  #start h1{ margin:0 0 8px; max-width:min(1200px,88vw); color:var(--ink); font-family:"Caveat","Patrick Hand",cursive; font-size:clamp(42px,6vw,82px); font-weight:600; line-height:1; text-align:center; }
+  #start .startDate{ margin:0; color:var(--accent); font-size:16px; font-weight:700; letter-spacing:.08em; text-transform:uppercase; }
+  #start .startSubtitle{ margin:0 0 12px; max-width:min(860px,82vw); color:var(--ink-dim); font-size:clamp(20px,2.8vw,30px); line-height:1.15; text-align:center; }
+  #start button{ font:inherit; background:none; border:2px solid var(--ink); color:var(--ink); border-radius:999px; width:96px; height:96px; font-size:38px; cursor:pointer; display:grid; place-items:center; padding-left:6px; }
+  #start button:focus-visible{ outline:3px solid var(--accent); outline-offset:6px; }
+  #start p{ margin:0; font-family:"Caveat","Patrick Hand",cursive; font-size:clamp(22px,3.2vw,34px); color:var(--ink-dim); }
+
+  #bar{ position:absolute; left:50%; bottom:calc(18px + env(safe-area-inset-bottom,0px)); transform:translateX(-50%); display:flex; align-items:center; gap:6px; padding:8px 12px; background:var(--bar); border:1px solid var(--bar-line); border-radius:14px; backdrop-filter:blur(6px); transition:opacity .35s ease; z-index:6; max-width:calc(100% - 24px); }
+  #bar.hide{ opacity:0; pointer-events:none; }
+  #bar.hide:focus-within{ opacity:1; pointer-events:auto; }
+  #bar{ flex-direction:column; align-items:stretch; gap:4px; width:max-content; }
+  #bar .row{ display:flex; align-items:center; justify-content:center; gap:6px; flex-wrap:nowrap; }
+  #bar button{ font:inherit; font-size:20px; line-height:1; color:var(--ink); background:none; border:0; border-radius:9px; min-width:40px; height:38px; cursor:pointer; padding:0 8px; }
+  #bar button:hover{ background:rgba(236,235,230,.08); }
+  #bar button:focus-visible{ outline:2px solid var(--accent); outline-offset:1px; }
+  #speed{ font-size:17px !important; min-width:52px !important; }
+  #dots{ display:flex; justify-content:center; align-items:center; gap:7px; padding:6px 8px 4px; flex-wrap:nowrap; }
+  #dots button{ min-width:0 !important; width:11px; height:11px !important; padding:0 !important; border-radius:50% !important; background:var(--ink-dim) !important; opacity:.45; }
+  #dots button.on{ background:var(--accent) !important; opacity:1; }
+  #holdCtl{ display:flex; align-items:center; gap:3px; font-size:18px; color:var(--ink); padding:0 8px; height:38px; border-radius:9px; white-space:nowrap; }
+  #holdCtl:hover{ background:rgba(236,235,230,.08); }
+  #holdCtl input{ width:52px; font:inherit; font-size:17px; color:var(--ink); background:rgba(236,235,230,.06); border:1px solid var(--bar-line); border-radius:7px; padding:3px 4px; text-align:center; }
+  #holdCtl input:focus-visible{ outline:2px solid var(--accent); outline-offset:1px; }
+  #mfCtl{ display:flex; align-items:center; gap:8px; font-size:18px; color:var(--ink-dim); padding:0 8px; height:38px; border-radius:9px; white-space:nowrap; }
+  #mfCtl label{ display:flex; align-items:center; gap:4px; color:var(--ink); cursor:pointer; user-select:none; }
+  #mfCtl input{ width:17px; height:17px; accent-color:var(--accent); margin:0; cursor:pointer; }
+  #mfCtl input:focus-visible{ outline:2px solid var(--accent); outline-offset:2px; }
+  #manualToggle{ display:flex; align-items:center; gap:6px; font-size:18px; color:var(--ink); padding:0 8px; height:38px; border-radius:9px; cursor:pointer; user-select:none; white-space:nowrap; }
+  #manualToggle:hover{ background:rgba(236,235,230,.08); }
+  #manualToggle input{ width:17px; height:17px; accent-color:var(--accent); margin:0; cursor:pointer; }
+  #manualToggle input:focus-visible{ outline:2px solid var(--accent); outline-offset:2px; }
+          #bar .row1{ justify-content:flex-start; gap:4px; }
+  #bar .row1 #dots{ flex:1; justify-content:flex-end; padding:0 4px 0 14px; }
+  #drawCtl{ display:flex; align-items:center; gap:4px; font-size:18px; color:var(--ink-dim); padding:0 8px; height:38px; border-radius:9px; white-space:nowrap; }
+  #drawCtl .seg{ display:flex; border:1px solid var(--bar-line); border-radius:8px; overflow:hidden; }
+  #drawCtl label{ position:relative; cursor:pointer; user-select:none; }
+  #drawCtl input{ position:absolute; opacity:0; width:1px; height:1px; }
+  #drawCtl span.opt{ display:block; padding:4px 9px; color:var(--ink); font-size:17px; }
+  #drawCtl label + label span.opt{ border-left:1px solid var(--bar-line); }
+  #drawCtl input:checked + span.opt{ background:var(--accent); color:#111; }
+  #drawCtl input:focus-visible + span.opt{ outline:2px solid var(--accent); outline-offset:-2px; }
+  #clockToggle{ display:flex; align-items:center; gap:6px; font-size:18px; color:var(--ink); padding:0 8px; height:38px; border-radius:9px; cursor:pointer; user-select:none; white-space:nowrap; }
+  #clockToggle:hover{ background:rgba(236,235,230,.08); }
+  #clockToggle input{ width:17px; height:17px; accent-color:var(--accent); margin:0; cursor:pointer; }
+  #hud{ position:absolute; right:calc(16px + env(safe-area-inset-right,0px)); bottom:calc(12px + env(safe-area-inset-bottom,0px)); display:none; gap:14px; align-items:baseline; font-family:"Patrick Hand",cursive; font-size:17px; color:var(--ink-dim); z-index:3; pointer-events:none; font-variant-numeric:tabular-nums; }
+  #hud #clock{ color:var(--accent); opacity:.85; }
+  #prog{ position:absolute; left:0; right:0; bottom:0; height:3px; background:rgba(236,235,230,.08); display:none; z-index:3; pointer-events:none; }
+  #prog i{ display:block; height:100%; width:0; background:var(--accent); opacity:.7; transition:width .3s linear; }
+  #stage.live #hud{ display:flex; }
+  #stage.live #prog{ display:block; }
+  @media (max-width:640px){ #dots{ display:none; } }
+
+  </style>
+</head>
+<body>
+  <script>
+const C = { chalk:'#ecebe6', dim:'#8f8e88', yel:'#f4d35e', cy:'#7fd3e6', red:'#ff7a6b', grn:'#9be38f', org:'#f5a35c' };
+const FONT = { h:'Caveat, "Patrick Hand", cursive', l:'"Patrick Hand", Caveat, cursive' };
+const NS = 'http://www.w3.org/2000/svg';
+
+/* ---------- seeded randomness for the hand-drawn wobble ---------- */
+let _s = 1;
+let layer;
+const setDrawingLayer = value => { layer = value; };
+const seed = n => { _s = n >>> 0; };
+function rnd(){ _s |= 0; _s = _s + 0x6D2B79F5 | 0; let t = Math.imul(_s ^ _s >>> 15, 1 | _s); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }
+const j = a => (rnd()*2 - 1) * a;
+const f = n => Math.round(n*10)/10;
+
+/* ---------- hand-drawn primitives ---------- */
+function seg(a, b, bow){
+  const dx=b[0]-a[0], dy=b[1]-a[1], len=Math.hypot(dx,dy)||1;
+  const k = j(bow*Math.min(1,len/150) + .5);
+  return ` Q${f((a[0]+b[0])/2 - dy/len*k)} ${f((a[1]+b[1])/2 + dx/len*k)} ${f(b[0])} ${f(b[1])}`;
+}
+function poly(pts, closed=false, bow=3){
+  pts = pts.map(p => [p[0]+j(1.2), p[1]+j(1.2)]);
+  let d = `M${f(pts[0][0])} ${f(pts[0][1])}`;
+  for(let i=1;i<pts.length;i++) d += seg(pts[i-1], pts[i], bow);
+  if(closed){
+    const a=pts[pts.length-1], s=pts[0], n=pts[1];
+    d += seg(a, s, bow);
+    d += ` L${f(s[0]+(n[0]-s[0])*.07+j(2))} ${f(s[1]+(n[1]-s[1])*.07+j(2))}`;
+  }
+  return d;
+}
+const line = (x1,y1,x2,y2,bow=3) => poly([[x1,y1],[x2,y2]], false, bow);
+const rect = (x,y,w,h,bow=3) => poly([[x,y],[x+w,y],[x+w,y+h],[x,y+h]], true, bow);
+function ell(cx,cy,rx,ry,a0=-Math.PI/2-.3,sweep=Math.PI*2+.4,wob=.03){
+  const n = Math.max(20, Math.round((rx+ry)*Math.abs(sweep)/9));
+  const ph = rnd()*6; let d='';
+  for(let i=0;i<=n;i++){
+    const a = a0 + sweep*i/n;
+    const r = 1 + wob*Math.sin(a*2+ph) + (i/n)*.02;
+    d += (i?' L':'M') + f(cx+Math.cos(a)*rx*r) + ' ' + f(cy+Math.sin(a)*ry*r);
+  }
+  return d;
+}
+function arrow(x1,y1,x2,y2,bow=5,hs=18){
+  const a = Math.atan2(y2-y1,x2-x1);
+  return [ line(x1,y1,x2,y2,bow),
+    `M${f(x2-hs*Math.cos(a-.45))} ${f(y2-hs*Math.sin(a-.45))} L${f(x2)} ${f(y2)} L${f(x2-hs*Math.cos(a+.45))} ${f(y2-hs*Math.sin(a+.45))}` ];
+}
+function cyl(x,y,w,h){ const rx=w/2, ry=Math.max(9,w*.16);
+  return [ ell(x+rx,y,rx,ry), line(x,y,x,y+h,1), line(x+w,y,x+w,y+h,1), ell(x+rx,y+h,rx,ry,0,Math.PI,.01), ell(x+rx,y+h*.5,rx,ry,.1,Math.PI-.2,.01) ]; }
+function doc(x,y,w,h){ const c=Math.min(26,w*.25);
+  return [ poly([[x,y],[x+w-c,y],[x+w,y+c],[x+w,y+h],[x,y+h]], true, 2), poly([[x+w-c,y],[x+w-c,y+c],[x+w,y+c]], false, 1) ]; }
+function monitor(x,y,w,h){ return [ rect(x,y,w,h,2), line(x+w/2,y+h,x+w/2,y+h+28,1), line(x+w/2-40,y+h+30,x+w/2+40,y+h+30,1) ]; }
+function phone(x,y,w,h){ return [ rect(x,y,w,h,2), line(x+w/2-12,y+h-14,x+w/2+12,y+h-14,.5) ]; }
+function gear(cx,cy,r,t=10){ const pts=[], n=t*4;
+  for(let i=0;i<n;i++){ const a=i/n*Math.PI*2, rr=(i%4<2)?r:r*.78; pts.push([cx+Math.cos(a)*rr, cy+Math.sin(a)*rr]); }
+  return [ poly(pts,true,.4), ell(cx,cy,r*.32,r*.32) ]; }
+function person(x,y,s=1){ return [ ell(x,y,18*s,18*s), line(x,y+19*s,x,y+92*s,2),
+  poly([[x-36*s,y+66*s],[x,y+42*s],[x+36*s,y+66*s]],false,2), poly([[x-30*s,y+150*s],[x,y+92*s],[x+30*s,y+150*s]],false,2) ]; }
+function bubble(x,y,w,h,tx,ty){ return [ ell(x+w/2,y+h/2,w/2,h/2), poly([[x+w*.28,y+h*.86],[tx,ty],[x+w*.42,y+h*.97]],false,1) ]; }
+function star4(cx,cy,r){ const q=()=>`${f(cx+j(r*.08))} ${f(cy+j(r*.08))}`;
+  return `M${f(cx)} ${f(cy-r)} Q${q()} ${f(cx+r)} ${f(cy)} Q${q()} ${f(cx)} ${f(cy+r)} Q${q()} ${f(cx-r)} ${f(cy)} Q${q()} ${f(cx)} ${f(cy-r)}`; }
+const check = (x,y,s) => poly([[x,y],[x+s*.35,y+s*.4],[x+s,y-s*.5]],false,1);
+function folder(x,y,w,h){ return poly([[x,y+14],[x,y],[x+w*.35,y],[x+w*.43,y+14],[x+w,y+14],[x+w,y+h],[x,y+h]],true,1.5); }
+function lock(cx,cy,s){ return [ ell(cx,cy,42*s,58*s,Math.PI,Math.PI,.005), rect(cx-62*s,cy,124*s,100*s,2), ell(cx,cy+40*s,10*s,10*s), line(cx,cy+50*s,cx,cy+72*s,.5) ]; }
+function globe(cx,cy,r){ return [ ell(cx,cy,r,r), ell(cx,cy,r*.42,r,-Math.PI/2,Math.PI*2+.2,.01), line(cx-r,cy,cx+r,cy,2),
+  line(cx-r*.86,cy-r*.5,cx+r*.86,cy-r*.5,2), line(cx-r*.86,cy+r*.5,cx+r*.86,cy+r*.5,2) ]; }
+function cube(x,y,s){ const d=s*.4, e=s*.35;
+  return [ rect(x,y,s,s,1.2), poly([[x,y],[x+d,y-e],[x+s+d,y-e],[x+s,y]],false,1), poly([[x+s+d,y-e],[x+s+d,y+s-e],[x+s,y+s]],false,1) ]; }
+function cloud(cx,cy,rx,ry){ const n=110; let d='';
+  for(let i=0;i<=n+5;i++){ const a=-Math.PI/2+i/n*Math.PI*2, r=.86+.2*Math.abs(Math.sin(a*3.5));
+    d += (i?' L':'M') + f(cx+Math.cos(a)*rx*r) + ' ' + f(cy+Math.sin(a)*ry*r); }
+  return d; }
+function scribble(x,y,w,h,n){ const pts=[]; for(let i=0;i<n;i++) pts.push([x+rnd()*w, y+rnd()*h]); return poly(pts,false,30); }
+
+/* ---------- scene builder ---------- */
+function B(){
+  const ops=[];
+  const b = {
+    ops,
+    p(d,c=C.chalk,w=3){ (Array.isArray(d)?d:[d]).forEach(x => ops.push({k:'p',d:x,c,w})); return b; },
+    t(x,y,s,o={}){ ops.push({k:'t',x,y,s,...o}); return b; },
+    w(ms){ ops.push({k:'w',ms}); return b; }
+  };
+  return b;
+}
+function head(b,n,title,sub,u){
+  b.t(110,110,'It means…',{size:32,c:C.dim,f:'l'});
+  b.t(110,174,title,{size:58,wt:600,u:u?C.yel:null});
+  if(sub) b.t(110,230,sub,{size:34,f:'l'});
+  b.w(250);
+}
+
+/* dashed versions (one path, many sub-paths) to mark what is optional */
+function dashPts(pts, dash=20, gap=13){
+  let d='', on=true, left=dash;
+  for(let i=1;i<pts.length;i++){
+    let [ax,ay]=pts[i-1]; const [bx,by]=pts[i];
+    let L=Math.hypot(bx-ax,by-ay);
+    while(L>0){
+      const s=Math.min(left,L), t=s/Math.hypot(bx-ax,by-ay);
+      const nx=ax+(bx-ax)*t, ny=ay+(by-ay)*t;
+      if(on) d += ` M${f(ax+j(.8))} ${f(ay+j(.8))} L${f(nx+j(.8))} ${f(ny+j(.8))}`;
+      ax=nx; ay=ny; L-=s; left-=s;
+      if(left<=0){ on=!on; left=on?dash:gap; }
+    }
+  }
+  return d.trim();
+}
+const dashRect = (x,y,w,h) => dashPts([[x,y],[x+w,y],[x+w,y+h],[x,y+h],[x,y]]);
+function dashEll(cx,cy,rx,ry){ const pts=[]; for(let i=0;i<=72;i++){ const a=i/72*Math.PI*2; pts.push([cx+Math.cos(a)*rx, cy+Math.sin(a)*ry]); } return dashPts(pts,18,12); }
+function bolt(x,y,s){ return poly([[x+25*s,y],[x,y+48*s],[x+20*s,y+48*s],[x+8*s,y+90*s],[x+48*s,y+34*s],[x+27*s,y+34*s],[x+40*s,y]],true,1); }
+function picture(x,y,w,h){ return [ rect(x,y,w,h,1.5), poly([[x+8,y+h-8],[x+w*.35,y+h*.45],[x+w*.55,y+h*.7],[x+w*.72,y+h*.55],[x+w-8,y+h-8]],false,1), ell(x+w*.75,y+h*.28,9,9) ]; }
+function wave(x,y,w,a){ let d=`M${f(x)} ${f(y)}`; for(let i=1;i<=40;i++){ const t=i/40; d+=` L${f(x+w*t)} ${f(y+Math.sin(t*Math.PI*6)*a*(0.3+0.7*Math.abs(Math.sin(t*Math.PI*2.3))))}`; } return d; }
+function meas(s,size,fk,wt){
+  const el=document.createElementNS(NS,'text');
+  el.setAttribute('font-family',FONT[fk||'h']); el.setAttribute('font-size',size); el.setAttribute('font-weight',wt||500);
+  el.textContent=s; layer.appendChild(el); const w=el.getBBox().width; el.remove(); return w;
+}
+function code(b,x,y,toks,size){
+  const sp = meas('a a',size,'l') - meas('aa',size,'l');
+  toks.forEach(([str,c]) => {
+    const lead = str.length - str.trimStart().length, t = str.trim();
+    x += lead*sp;
+    if(t){ b.t(x,y,t,{size,f:'l',c}); x += meas(t,size,'l'); }
+  });
+  return x;
+}
+function head2(b,kick,title,sub,u){
+  b.t(110,110,kick,{size:32,c:C.dim,f:'l'});
+  b.t(110,174,title,{size:58,wt:600,u:u?C.yel:null});
+  if(sub) b.t(110,230,sub,{size:34,f:'l'});
+  b.w(250);
+}
+
+
+function definePresentation({ name, id, folder, title, subtitle, publishedAt, ariaLabel, playlist, player = {} }) {
+  const scenes = playlist.flatMap(item => {
+    const chosen = item.scenes ? item.scenes.map(sceneId => item.episode.scenes.find(scene => scene.id.endsWith('/' + sceneId) || scene.id === sceneId)).filter(Boolean) : item.episode.scenes;
+    return chosen.map(scene => ({ ...scene, role: item.role, optional: Boolean(item.optional) }));
+  });
+  return { name, id, folder, title, subtitle, publishedAt, ariaLabel, scenes, player };
+}
+
+
+const microApp = (() => {
+
+const scenes = [
+/* 0 · Micro App */
+b => {
+  b.t(800,190,'Mikup',{size:130,c:C.yel,a:'middle',wt:700});
+  b.t(800,262,'= Micro App',{size:58,a:'middle'}).w(300);
+  const cs=[];
+  for(let r=0;r<3;r++) for(let c=0;c<4;c++){ const x=150+c*72+j(6), y=380+r*68+j(6); cs.push([x+17,y+17]); b.p(rect(x,y,34,34,1.5),C.chalk,2.5); }
+  for(let k=0;k<9;k++){ const a=cs[Math.floor(rnd()*12)], z=cs[Math.floor(rnd()*12)]; if(a!==z) b.p(line(a[0],a[1],z[0],z[1],10),C.dim,1.5); }
+  b.t(285,700,'microservices',{size:44,a:'middle'});
+  b.t(285,745,'too fine-grained',{size:30,a:'middle',f:'l',c:C.dim}).w(250);
+  b.p(rect(1190,360,260,270,2),C.chalk,5);
+  for(let k=0;k<14;k++){ const x=1210+rnd()*200, y=390+rnd()*200; b.p(line(x,y+26,x+26,y,1),C.dim,2); }
+  b.t(1320,700,'monolith',{size:44,a:'middle'});
+  b.t(1320,745,'too rigid',{size:30,a:'middle',f:'l',c:C.dim}).w(250);
+  const boxes=[[625,380],[830,380],[728,530]];
+  boxes.forEach(([x,y]) => b.p(rect(x,y,145,110),C.yel,3.5));
+  b.p(line(770,435,830,435,2),C.yel,2.5).p(line(700,490,760,530,2),C.yel,2.5).p(line(900,490,840,530,2),C.yel,2.5);
+  boxes.forEach(([x,y]) => { b.p(line(x+20,y+30,x+110,y+30,1),C.dim,2).p(line(x+20,y+55,x+92,y+55,1),C.dim,2).p(line(x+20,y+80,x+70,y+80,1),C.dim,2); });
+  b.t(800,700,'Micro App',{size:48,c:C.yel,a:'middle',wt:700});
+  b.t(800,745,'the right balance',{size:30,a:'middle',f:'l'});
+},
+/* 1 · framework */
+b => {
+  b.t(800,150,'A framework to',{size:56,a:'middle'});
+  b.t(800,228,'simplify and speed up',{size:78,c:C.yel,a:'middle',wt:700,u:C.yel}).w(300);
+  b.p(rect(170,360,360,260),C.chalk,3);
+  b.p(scribble(200,390,300,200,26),C.dim,2.2);
+  b.t(350,675,'complexity',{size:44,a:'middle'}).w(200);
+  b.p(arrow(570,490,860,490,6,22),C.yel,4);
+  b.t(715,462,'Mikup',{size:40,c:C.yel,a:'middle',wt:700}).w(200);
+  const x=1060, y=490;
+  b.p(`M${x} ${y-34} Q${x+160} ${y-58} ${x+250} ${y+2} Q${x+160} ${y+60} ${x} ${y+34} L${x} ${y-36}`,C.chalk,3.5);
+  b.p(ell(x+165,y,17,17),C.cy,3);
+  b.p(poly([[x+30,y-36],[x-12,y-78],[x+80,y-42]]),C.chalk,3).p(poly([[x+30,y+36],[x-12,y+78],[x+80,y+42]]),C.chalk,3);
+  b.p(poly([[x,y-20],[x-55,y-12],[x-25,y],[x-62,y+12],[x,y+20]],false,2),C.yel,3);
+  b.p(line(x-160,y-55,x-90,y-55,1),C.dim,2).p(line(x-180,y,x-95,y,1),C.dim,2).p(line(x-160,y+55,x-90,y+55,1),C.dim,2);
+  b.t(1185,675,'speed',{size:44,a:'middle'}).w(400);
+  b.t(800,790,'for enterprise applications with a substantial backend',{size:38,a:'middle',f:'l'});
+},
+/* 2 · single grammar */
+b => {
+  b.t(800,150,'One single grammar',{size:82,c:C.yel,a:'middle',wt:700,u:C.yel});
+  b.t(800,222,'to send and receive anything from the system',{size:38,a:'middle',f:'l'}).w(300);
+  b.p(person(220,420,1.1),C.chalk,3);
+  b.p(bubble(250,290,190,85,235,398),C.chalk,2.5);
+  b.t(345,342,'I need…',{size:30,a:'middle',f:'l'});
+  b.p(arrow(300,465,590,465),C.chalk,3);
+  b.t(445,448,'request',{size:28,a:'middle',f:'l',c:C.dim});
+  b.p(rect(600,410,320,170),C.yel,4);
+  b.t(760,485,'Mikup',{size:56,c:C.yel,a:'middle',wt:700});
+  b.t(760,540,'one grammar',{size:28,a:'middle',f:'l',c:C.dim});
+  b.p(arrow(590,535,300,535),C.chalk,3);
+  b.t(445,575,'response',{size:28,a:'middle',f:'l',c:C.dim}).w(200);
+  b.p(arrow(930,480,1165,335),C.chalk,2.5).p(cyl(1180,290,90,80),C.chalk,3).t(1310,345,'data',{size:36,f:'l'});
+  b.p(arrow(930,490,1170,466),C.chalk,2.5).p(doc(1188,420,74,92),C.chalk,3).t(1310,475,'documents',{size:36,f:'l'});
+  b.p(arrow(930,505,1158,592),C.chalk,2.5).p(monitor(1170,560,110,70),C.chalk,3).t(1310,605,'interfaces',{size:36,f:'l'});
+  b.p(arrow(930,520,1182,722),C.chalk,2.5).p(gear(1225,735,38,9),C.chalk,3).t(1310,750,'logic',{size:36,f:'l'});
+},
+/* 3 · no application server */
+b => {
+  head(b,1,'no web containers or application servers to manage');
+  b.p(rect(200,320,560,420),C.chalk,3);
+  b.t(230,365,'Application Server',{size:36,f:'l'});
+  b.p(rect(250,395,460,300),C.chalk,2.5);
+  b.t(275,435,'web container',{size:32,f:'l',c:C.dim});
+  [290,390,490].forEach(x => b.p(doc(x,470,70,90),C.dim,2.2));
+  b.t(480,640,'deploy, descriptors, classloaders…',{size:28,a:'middle',f:'l',c:C.dim}).w(300);
+  b.p(line(190,310,770,750,10),C.red,6).p(line(770,310,190,750,10),C.red,6).w(200);
+  b.p(arrow(820,530,1050,530,6,22),C.yel,4);
+  b.p(rect(1080,440,300,180),C.yel,4);
+  b.t(1230,522,'Mikup',{size:56,c:C.yel,a:'middle',wt:700});
+  b.t(1230,580,'it just starts',{size:30,a:'middle',f:'l'});
+  b.p(check(1170,690,50),C.grn,4);
+  b.t(1235,705,'no server to manage',{size:32,f:'l',c:C.grn});
+},
+/* 4 · DSLs and databases */
+b => {
+  head(b,2,'no database languages to learn','thanks to DSLs');
+  b.p(person(230,430,1),C.chalk,3);
+  b.p(bubble(280,300,220,90,252,412),C.chalk,2.5);
+  b.t(390,355,'one language',{size:28,a:'middle',f:'l'});
+  b.p(arrow(300,520,600,520),C.chalk,3);
+  b.p(doc(620,390,190,250),C.yel,3.5);
+  b.t(715,478,'DSL',{size:66,c:C.yel,a:'middle',wt:700});
+  [[525,780],[560,770],[595,755]].forEach(([y,x2]) => b.p(line(650,y,x2,y,1),C.dim,2));
+  b.t(715,700,'one grammar, many databases',{size:30,a:'middle',f:'l',c:C.yel}).w(200);
+  [[320,100,385,'MongoDB'],[500,100,565,'PostgreSQL'],[680,90,740,'…']].forEach(([y,h,ty,lab],i) => {
+    b.p(arrow(830,515,1105,[380,555,725][i]),C.chalk,2.5);
+    b.p(cyl(1120,y,140,h),C.chalk,3);
+    b.t(1290,ty,lab,{size:38,f:'l'});
+  });
+},
+/* 5 · declarative UIs */
+b => {
+  head(b,3,'declarative, agnostic user interfaces','ideal for AI generation',true);
+  b.p(star4(250,480,70),C.yel,3.5).p(star4(345,400,26),C.yel,3).p(star4(330,565,16),C.yel,2.5);
+  b.t(250,625,'AI',{size:60,c:C.yel,a:'middle',wt:700});
+  b.p(arrow(370,490,565,490),C.chalk,3);
+  b.p(doc(590,320,320,380),C.chalk,3);
+  b.t(625,385,'page',{size:32,f:'l'});
+  b.t(645,435,'– table: orders',{size:30,f:'l'});
+  b.t(645,485,'– filter: date',{size:30,f:'l'});
+  b.t(645,535,'– action: save',{size:30,f:'l'});
+  b.t(750,640,'what, not how',{size:34,a:'middle',c:C.yel}).w(200);
+  b.p(arrow(930,450,1080,410),C.chalk,2.5);
+  b.p(monitor(1100,330,260,160),C.chalk,3);
+  b.p(rect(1120,350,220,26,1),C.dim,2).p(line(1120,405,1320,405,1),C.dim,2).p(line(1120,435,1300,435,1),C.dim,2).p(line(1120,465,1280,465,1),C.dim,2);
+  b.p(arrow(930,560,1222,640),C.chalk,2.5);
+  b.p(phone(1240,560,100,180),C.chalk,3);
+  b.p(line(1255,590,1325,590,1),C.dim,2).p(line(1255,615,1315,615,1),C.dim,2).p(line(1255,640,1300,640,1),C.dim,2);
+  b.t(1290,795,'web, mobile, …',{size:30,a:'middle',f:'l',c:C.dim});
+},
+/* 6 · configuration */
+b => {
+  head(b,4,'no worrying about configuration','even as it keeps evolving');
+  b.p(gear(520,420,85,10),C.chalk,3).p(gear(668,368,55,8),C.yel,3);
+  b.p(arrow(160,660,1450,660,4),C.chalk,3);
+  [320,600,880,1160].forEach((x,i) => {
+    b.p(rect(x-55,585,110,50,1.5),C.chalk,2.5);
+    b.t(x,620,'v'+(i+1),{size:34,a:'middle',f:'l'});
+    b.p(line(x,636,x,656,.5),C.dim,2);
+  });
+  b.t(1360,620,'v…',{size:34,a:'middle',f:'l',c:C.dim}).w(250);
+  b.t(1150,400,'Mikup handles it',{size:48,c:C.yel,a:'middle',wt:700});
+  b.p(check(1110,475,70),C.grn,4).w(200);
+  b.t(800,770,'configurations change, you keep building',{size:34,a:'middle',f:'l',c:C.dim});
+},
+/* 7 · business rules */
+b => {
+  head(b,5,'business rules, just like any other file','same way, same place');
+  b.p(folder(200,320,150,100),C.chalk,3);
+  b.t(370,385,'project',{size:38,f:'l'});
+  b.p(line(240,430,240,700,2),C.dim,2);
+  [[480,'data',C.chalk],[590,'interfaces',C.chalk],[700,'business rule',C.yel]].forEach(([y,lab,c]) => {
+    b.p(line(240,y,320,y,1),C.dim,2);
+    b.p(doc(330,y-42,62,80),c,2.8);
+    b.t(410,y+10,lab,{size:34,f:'l',c});
+  });
+  b.w(200);
+  b.p(arrow(680,700,870,600,30),C.yel,3);
+  b.p(rect(880,420,520,230),C.yel,3.5);
+  b.t(915,490,'if  customer.tier = "gold"',{size:34,f:'l'});
+  b.t(915,545,'then  discount = 10%',{size:34,f:'l'});
+  b.t(915,610,'it is a file, like all the others',{size:30,f:'l',c:C.dim});
+},
+/* 8 · permission */
+b => {
+  head(b,6,'no permission management to worry about');
+  [[250,430],[360,415],[470,430]].forEach(([x,y]) => b.p(person(x,y,.6),C.chalk,2.5));
+  b.t(360,600,'users',{size:38,a:'middle'});
+  b.p(arrow(530,500,690,500),C.chalk,3);
+  b.p(lock(800,470,1.4),C.yel,4);
+  b.t(800,680,'who can do what',{size:40,a:'middle',c:C.yel,wt:700}).w(200);
+  b.p(arrow(910,520,1090,440),C.chalk,2.5).p(arrow(910,560,1090,620),C.chalk,2.5);
+  b.p(doc(1110,370,80,100),C.chalk,2.8).p(cyl(1240,385,90,80),C.chalk,2.8);
+  b.p(monitor(1110,560,110,70),C.chalk,2.8).p(cube(1260,580,60),C.chalk,2.8);
+  b.t(1250,770,'resources',{size:38,a:'middle'}).w(200);
+  b.t(800,830,'not your concern',{size:34,a:'middle',f:'l',c:C.dim});
+},
+/* 9 · generative vs deterministic */
+b => {
+  head(b,7,'keeping generative and deterministic apart','AI on one side, transactions on the other');
+  b.p(cloud(430,440,200,110),C.cy,3);
+  b.p(star4(370,430,28),C.yel,2.5).p(star4(470,465,20),C.yel,2.5).p(star4(520,410,14),C.yel,2);
+  b.t(430,625,'generative',{size:54,c:C.cy,a:'middle',wt:700});
+  b.t(430,672,'AI, language, ideas',{size:30,a:'middle',f:'l',c:C.dim}).w(200);
+  b.p(line(800,290,800,720,4),C.dim,2.5).p(line(806,300,804,712,4),C.dim,1.5).w(150);
+  b.p(gear(1080,430,70,10),C.chalk,3).p(gear(1190,385,45,8),C.chalk,3);
+  b.p(check(1268,470,52),C.grn,4);
+  b.t(1170,625,'deterministic',{size:54,a:'middle',wt:700});
+  b.t(1170,672,'transactions, rules, data',{size:30,a:'middle',f:'l',c:C.dim}).w(250);
+  b.t(800,795,'two worlds, cleanly separated',{size:40,a:'middle',c:C.yel});
+},
+/* 10 · API */
+b => {
+  head(b,8,'a self-documenting, standard API','ready to spread across the web');
+  b.p(doc(210,320,240,300),C.chalk,3);
+  b.t(330,482,'{ }',{size:92,c:C.yel,a:'middle',wt:700});
+  b.p(line(240,545,420,545,1),C.dim,2).p(line(240,580,390,580,1),C.dim,2);
+  b.t(330,690,'API standard',{size:46,a:'middle'});
+  b.p(arrow(470,470,600,470),C.chalk,3);
+  b.p(doc(620,360,180,230),C.chalk,3);
+  [420,455,490,525,560].forEach((y,i) => b.p(line(645,y,770-i*8,y,1),C.dim,2));
+  b.t(710,650,'documentation',{size:34,a:'middle',f:'l'});
+  b.t(710,692,'built in',{size:34,a:'middle',f:'l',c:C.yel}).w(200);
+  b.p(arrow(820,470,1040,470),C.chalk,3);
+  b.p(globe(1200,470,140),C.cy,3);
+  b.p(arrow(1335,410,1440,340),C.cy,2.5).p(ell(1458,328,10,10),C.cy,2.5);
+  b.p(arrow(1340,525,1445,585),C.cy,2.5).p(ell(1462,594,10,10),C.cy,2.5);
+  b.p(arrow(1240,335,1300,262),C.cy,2.5).p(ell(1312,248,10,10),C.cy,2.5);
+  b.t(1200,690,'across the web',{size:38,a:'middle',c:C.cy});
+},
+/* 11 · Harness */
+b => {
+  head(b,9,'a powerful Application Harness','Mikup itself is the harness: agents and skills live inside it');
+  b.p(rect(200,300,1200,450,2),C.yel,5);
+  [[220,320],[1380,320],[220,730],[1380,730]].forEach(([x,y]) => b.p(ell(x,y,6,6),C.yel,2.5));
+  b.t(245,358,'Mikup',{size:50,c:C.yel,wt:700});
+  b.t(385,358,'= the Application Harness',{size:34,f:'l',c:C.yel}).w(250);
+  b.p(star4(300,470,36),C.cy,3.5).p(star4(368,505,22),C.cy,3);
+  b.t(330,570,'agents',{size:38,a:'middle',c:C.cy,wt:700});
+  [262,322,382].forEach(x => { b.p(rect(x,600,48,58,1),C.chalk,2.5); b.p(check(x+12,632,24),C.grn,2.5); });
+  b.t(330,712,'skills',{size:38,a:'middle',wt:700}).w(200);
+  b.p(cube(580,490,70),C.chalk,3).p(cube(780,420,70),C.chalk,3).p(cube(960,490,70),C.chalk,3).p(cube(740,620,60),C.chalk,3);
+  b.p(line(680,510,778,460,4),C.dim,2).p(line(880,460,958,510,4),C.dim,2).p(line(615,562,738,642,4),C.dim,2).p(line(826,642,995,562,4),C.dim,2);
+  b.t(615,600,'order',{size:26,a:'middle',f:'l',c:C.dim});
+  b.t(815,520,'customer',{size:26,a:'middle',f:'l',c:C.dim});
+  b.t(995,600,'item',{size:26,a:'middle',f:'l',c:C.dim});
+  b.t(775,710,'rule',{size:26,a:'middle',f:'l',c:C.dim}).w(150);
+  b.p(arrow(415,495,565,515),C.cy,3);
+  b.t(490,478,'native access',{size:24,a:'middle',f:'l',c:C.cy});
+  b.p(arrow(440,630,728,648,6),C.chalk,2.5);
+  b.t(585,612,'use',{size:24,a:'middle',f:'l',c:C.dim}).w(150);
+  b.p(ell(1230,500,50,50),C.chalk,3.5).p(line(1266,536,1325,595,1),C.chalk,6);
+  b.t(1250,665,'it knows and reaches',{size:30,a:'middle',f:'l'});
+  b.t(1250,702,'every object',{size:30,a:'middle',f:'l'});
+  b.t(800,810,'agents and skills are defined inside Mikup, like any other resource',{size:34,a:'middle',f:'l',c:C.dim});
+},
+/* 12 · conversational */
+b => {
+  head(b,10,'a conversational approach','for any feature');
+  b.p(person(210,450,1.1),C.chalk,3);
+  b.p(bubble(240,300,400,110,215,428),C.cy,3);
+  b.t(440,365,'show me today\'s orders',{size:30,a:'middle',f:'l'});
+  b.p(arrow(320,560,790,560,8),C.cy,3).w(150);
+  [[820,330,'orders'],[1150,330,'customers'],[820,570,'inventory'],[1150,570,'invoices']].forEach(([x,y,lab]) => {
+    b.p(rect(x,y,250,150),C.chalk,3);
+    b.t(x+125,y+90,lab,{size:40,a:'middle'});
+    b.p(ell(x+245,y-8,36,22),C.cy,2.5).p(poly([[x+228,y+10],[x+214,y+28],[x+246,y+13]],false,1),C.cy,2.5);
+    b.t(x+245,y+2,'…',{size:30,a:'middle',c:C.cy});
+  });
+  b.w(200);
+  b.t(800,810,'every feature answers in natural language',{size:34,a:'middle',f:'l',c:C.dim});
+},
+/* 13 · resource driven */
+b => {
+  b.t(800,150,'But how do we get all of this?',{size:66,a:'middle',wt:600}).w(400);
+  b.t(800,225,'the answer is adopting a',{size:38,a:'middle',f:'l',c:C.dim});
+  b.t(800,305,'Resource Driven System',{size:76,c:C.yel,a:'middle',wt:700,u:C.yel}).w(350);
+  b.p(rect(330,380,940,260,2),C.chalk,3);
+  b.p(line(330,425,1270,425,1),C.dim,1.5);
+  b.p(ell(360,403,7,7),C.red,2).p(ell(385,403,7,7),C.yel,2).p(ell(410,403,7,7),C.grn,2);
+  b.t(385,505,'Resource = resolve(FQN, context)',{size:50,f:'l'});
+  b.t(385,590,'Content  = Resource.getContent( … )',{size:50,f:'l'}).w(350);
+  b.t(330,762,'FQN + context',{size:38,f:'l',c:C.cy});
+  b.p(arrow(560,750,690,750),C.chalk,3);
+  b.t(625,730,'resolve',{size:26,a:'middle',f:'l',c:C.dim});
+  b.p(ell(800,748,105,42),C.yel,3);
+  b.t(800,762,'Resource',{size:40,a:'middle',c:C.yel,wt:700});
+  b.p(arrow(915,750,1060,750),C.chalk,3);
+  b.t(988,730,'getContent',{size:26,a:'middle',f:'l',c:C.dim});
+  b.t(1080,762,'Content',{size:38,f:'l',c:C.cy});
+}
+];
+const titles = ['Micro App','The framework','One single grammar','No application server','DSLs and databases','Declarative UIs','Configuration','Business rules','Permissions','Generative vs deterministic','API','Application Harness','Conversational','Resource Driven'];
+const sceneIds = [
+  'micro-app',
+  'framework',
+  'single-grammar',
+  'no-application-server',
+  'dsls-and-databases',
+  'declarative-uis',
+  'configuration',
+  'business-rules',
+  'permissions',
+  'generative-vs-deterministic',
+  'api',
+  'application-harness',
+  'conversational',
+  'resource-driven',
+];
+
+return { id: 'micro-app', title: 'What happens to software in the AI era?', scenes: scenes.map((render, index) => ({ id: 'micro-app/' + sceneIds[index], title: titles[index], render })) };
+
+})();
+
+const resource = (() => {
+
+const scenes = [
+/* 1 · first-class citizen */
+b => {
+  b.t(800,150,'The Resource',{size:100,c:C.yel,a:'middle',wt:700,u:C.yel});
+  b.t(800,222,'the first-class citizen of Mikup',{size:38,a:'middle',f:'l'}).w(300);
+  b.p(ell(800,450,190,92),C.yel,4);
+  b.t(800,470,'Resource',{size:66,c:C.yel,a:'middle',wt:700}).w(250);
+  b.p(arrow(330,450,590,450,6,20),C.chalk,3);
+  b.t(450,425,'it starts here',{size:32,a:'middle',f:'l'});
+  b.p(arrow(1010,450,1270,450,6,20),C.chalk,3);
+  b.t(1150,425,'it ends here',{size:32,a:'middle',f:'l'}).w(250);
+  b.p(line(700,530,520,620,3),C.dim,2).p(line(800,545,800,620,2),C.dim,2).p(line(900,530,1080,620,3),C.dim,2);
+  // workflow
+  b.p(ell(450,670,16,16),C.chalk,2.8).p(arrow(470,670,505,670,1,10),C.chalk,2.5).p(ell(525,670,16,16),C.chalk,2.8).p(arrow(545,670,580,670,1,10),C.chalk,2.5).p(ell(600,670,16,16),C.chalk,2.8);
+  b.t(525,745,'every workflow',{size:34,a:'middle',f:'l'});
+  // saving
+  b.p(cyl(765,640,70,55),C.chalk,2.8);
+  b.t(800,745,'every save',{size:34,a:'middle',f:'l'});
+  // processing
+  b.p(gear(1080,672,36,9),C.chalk,2.8);
+  b.t(1080,745,'every processing',{size:34,a:'middle',f:'l'}).w(250);
+  b.t(800,815,'everything starts and ends with a Resource',{size:38,a:'middle',c:C.yel});
+},
+/* 2 · two ways to look at it */
+b => {
+  b.t(800,160,'Two ways to understand it',{size:70,a:'middle',wt:600}).w(300);
+  b.p(rect(330,320,240,170,2),C.chalk,3);
+  b.p(line(330,380,570,380,2),C.chalk,2.5);
+  b.t(450,362,'metadata',{size:28,a:'middle',f:'l',c:C.yel});
+  b.t(450,445,'content',{size:28,a:'middle',f:'l',c:C.dim});
+  b.t(450,590,'Anatomy',{size:64,c:C.yel,a:'middle',wt:700});
+  b.t(450,640,'how it is made',{size:34,a:'middle',f:'l'}).w(250);
+  b.p(line(800,300,800,700,4),C.dim,2.5).p(line(806,310,804,692,4),C.dim,1.5).w(150);
+  [[1030,'1'],[1150,'2'],[1270,'3']].forEach(([x,n],i) => {
+    b.p(i===2 ? dashEll(x,405,40,40) : ell(x,405,40,40),C.chalk,3);
+    b.t(x,420,n,{size:40,a:'middle'});
+  });
+  b.p(arrow(1074,405,1106,405,1,10),C.chalk,2.5).p(arrow(1194,405,1226,405,1,10),C.chalk,2.5);
+  b.t(1150,590,'Definition',{size:64,c:C.yel,a:'middle',wt:700});
+  b.t(1150,640,'how it comes to life',{size:34,a:'middle',f:'l'});
+},
+/* 3 · anatomy */
+b => {
+  head2(b,'Anatomy','identity, always separate from the payload','a Resource is made of two parts');
+  b.t(560,295,'Resource',{size:34,f:'l',c:C.dim});
+  b.p(rect(560,310,480,440),C.chalk,3);
+  b.p(rect(590,340,420,160),C.yel,3.5);
+  b.t(800,415,'Metadata',{size:56,c:C.yel,a:'middle',wt:700});
+  b.t(800,465,'required',{size:30,a:'middle',f:'l'}).w(250);
+  b.p(dashRect(590,540,420,180),C.dim,2.5);
+  b.t(800,620,'Content',{size:56,a:'middle',wt:700});
+  b.t(800,670,'optional',{size:30,a:'middle',f:'l',c:C.dim}).w(250);
+  b.p(arrow(390,420,570,420),C.yel,3);
+  b.t(280,432,'identity',{size:48,a:'middle',c:C.yel,wt:700});
+  b.p(arrow(1220,630,1030,630),C.cy,3);
+  b.t(1320,642,'payload',{size:48,a:'middle',c:C.cy,wt:700});
+},
+/* 4 · metadata */
+b => {
+  head2(b,'Anatomy','Metadata: the descriptive heart','a standard Mikup object, always present');
+  b.p(rect(170,300,570,460),C.yel,3.5);
+  b.t(205,355,'name: app',{size:32,f:'l'});
+  b.t(205,398,'type: MetadataObj',{size:32,f:'l',c:C.dim}).w(200);
+  b.t(205,465,'props:',{size:34,f:'l',c:C.yel,wt:700});
+  b.t(320,465,'always there, for every Resource',{size:26,f:'l',c:C.dim});
+  b.t(240,510,'uuid, type, permissions,',{size:30,f:'l'});
+  b.t(240,550,'created, owner, modified,',{size:30,f:'l'});
+  b.t(240,590,'contentPath, contentFormat, …',{size:30,f:'l'}).w(200);
+  b.t(205,660,'attrs:',{size:34,f:'l',c:C.cy,wt:700});
+  b.t(320,660,'specific to this Resource',{size:26,f:'l',c:C.dim});
+  b.t(240,705,'xxxx, yyy',{size:30,f:'l'}).w(250);
+  // 1 · catalog
+  b.p(arrow(760,440,985,370,3,18),C.chalk,3);
+  b.p(rect(1000,300,180,130),C.chalk,3);
+  b.p(line(1000,343,1180,343,1),C.chalk,2.5).p(line(1000,386,1180,386,1),C.chalk,2.5);
+  [322,365,408].forEach(y => b.p(line(1075,y,1105,y,.5),C.yel,3));
+  b.t(1210,350,'1. catalogs',{size:38,c:C.yel,wt:700});
+  b.t(1210,390,'the Resources',{size:32,f:'l'});
+  b.t(1210,425,'by their metadata',{size:28,f:'l',c:C.dim}).w(300);
+  // 2 · search
+  b.p(arrow(760,560,945,590,3,18),C.chalk,3);
+  b.p(ell(1000,595,42,42),C.grn,3.5).p(line(1030,625,1058,653,1),C.grn,4);
+  b.p(person(880,665,.42),C.cy,2.8);
+  b.t(880,790,'user profile',{size:26,a:'middle',f:'l',c:C.cy});
+  b.p(arrow(905,680,968,632,2,14),C.cy,2.5);
+  b.t(1045,755,'?type=…',{size:28,a:'middle',f:'l',c:C.grn});
+  b.t(1045,790,'search parameters',{size:26,a:'middle',f:'l',c:C.grn});
+  b.p(arrow(1042,725,1022,650,2,14),C.grn,2.5).w(200);
+  b.p(arrow(1065,595,1190,595,3,18),C.yel,3);
+  b.p(rect(1205,535,190,120),C.chalk,3);
+  [550,588,626].forEach(y => b.p(rect(1222,y,156,24,1),C.yel,2.2));
+  b.t(1300,700,'2. searches the Resources',{size:32,a:'middle',c:C.yel,wt:700});
+  b.t(1300,738,'by user profile and parameters',{size:28,a:'middle',f:'l',c:C.dim});
+},
+/* 5 · content */
+b => {
+  head2(b,'Anatomy','Content: the payload it carries','optional, and in one of two forms');
+  b.p(doc(290,320,240,300),C.chalk,3);
+  b.t(410,480,'{ }',{size:92,c:C.yel,a:'middle',wt:700});
+  b.p(rect(318,540,82,44,1),C.dim,2).t(359,572,'JSON',{size:26,a:'middle',f:'l'});
+  b.t(418,572,'or',{size:24,a:'middle',f:'l',c:C.dim});
+  b.p(rect(436,540,82,44,1),C.dim,2).t(477,572,'YAML',{size:26,a:'middle',f:'l'});
+  b.t(410,690,'structured data',{size:46,a:'middle',wt:700});
+  b.t(410,738,'a standard Mikup object',{size:30,a:'middle',f:'l',c:C.dim}).w(250);
+  b.p(line(800,310,800,440,3),C.dim,2).p(line(800,560,800,720,3),C.dim,2);
+  b.t(800,515,'or',{size:50,a:'middle',c:C.dim}).w(200);
+  b.t(1170,370,'0100 1101 1101 0010 0110 …',{size:36,a:'middle',f:'l',c:C.cy});
+  b.p(arrow(1000,400,1000,460,1,14),C.cy,2.5).p(arrow(1170,400,1170,460,1,14),C.cy,2.5).p(arrow(1340,400,1340,460,1,14),C.cy,2.5);
+  b.p(doc(955,480,90,115),C.chalk,3).t(1000,560,'PDF',{size:30,a:'middle',f:'l'});
+  b.p(picture(1110,490,120,95),C.chalk,3);
+  b.p(wave(1280,537,120,34),C.chalk,3);
+  b.t(1170,690,'byte stream',{size:46,a:'middle',wt:700,c:C.cy});
+  b.t(1170,738,'a document, an image, an audio file',{size:30,a:'middle',f:'l',c:C.dim});
+},
+/* 6 · three verbs */
+b => {
+  head2(b,'Definition','three verbs bring it to life','the definition cycle of every Resource');
+  [[330,'Qualify','FQN','give it a name'],[800,'Persist','Repository','decide how to store it'],[1270,'Process','Processors','elaborate it, if needed']].forEach(([x,v,r,h],i) => {
+    b.t(x,345,String(i+1),{size:34,a:'middle',f:'l',c:C.dim});
+    b.p(i===2 ? dashEll(x,450,140,72) : ell(x,450,140,72),i===2?C.cy:C.yel,3.5);
+    b.t(x,468,v,{size:56,a:'middle',wt:700,c:i===2?C.cy:C.yel});
+    b.p(arrow(x,535,x,615,2,16),C.chalk,2.5);
+    b.t(x,670,r,{size:46,a:'middle',wt:700});
+    b.t(x,718,h,{size:30,a:'middle',f:'l',c:C.dim}).w(200);
+    if(i<2) b.p(arrow(x+150,450,x+320,450,4,18),C.chalk,3);
+  });
+},
+/* 7 · qualify */
+b => {
+  head2(b,'1 · Qualify','give it a name','a unique, absolute Fully Qualified Name');
+  b.t(800,330,'[prefix:]resPath[@resParams][.selectors][.extension][?params]',{size:34,a:'middle',f:'l',c:C.dim}).w(300);
+  const parts = [
+    ['repo/s3:', C.dim, 'prefix', 400],
+    ['app/res', C.yel, 'resPath', 700],
+    ['@rp1/rp2', C.red, 'resParams', 400],
+    ['.s1.s2', C.chalk, 'selectors', 400],
+    ['.ext', C.cy, 'extension', 400],
+    ['?p1=v1&p2=v2', C.grn, 'params', 400]
+  ];
+  const SZ = 50, GAP = 6;
+  const ws = parts.map(([s,,,wt]) => meas(s,SZ,'l',wt));
+  const tot = ws.reduce((a,c)=>a+c,0) + GAP*(parts.length-1);
+  let x = 830 - tot/2;
+  const x0 = x;
+  b.p(poly([[x0-30,440],[x0+tot+35,440],[x0+tot+35,560],[x0-30,560],[x0-80,500]],true,2),C.chalk,3);
+  b.p(ell(x0-45,500,9,9),C.chalk,2.5).w(150);
+  const xs = [];
+  parts.forEach(([s,c,,wt],i) => { xs.push(x); b.t(x,518,s,{size:SZ,f:'l',c,wt}); x += ws[i] + GAP; });
+  b.w(250);
+  parts.forEach(([s,c,lab],i) => {
+    const a = xs[i]+2, z = xs[i]+ws[i]-2, m = (a+z)/2, low = i%2===1;
+    b.p(poly([[a,585],[a,598],[z,598],[z,585]],false,.6),c,2.2);
+    if(low) b.p(line(m,602,m,640,.5),c,1.6);
+    b.t(m, low?675:635, lab, {size:28,a:'middle',f:'l',c});
+  });
+  b.t(xs[1]+ws[1]/2,715,'the only required part',{size:26,a:'middle',f:'l',c:C.dim}).w(250);
+  b.t(800,800,'unambiguous across the whole project',{size:38,a:'middle'});
+},
+/* 8 · persist */
+b => {
+  head2(b,'2 · Persist','decide how it is stored','Repositories own the physical storage strategy');
+  b.p(ell(260,520,110,62),C.yel,3.5);
+  b.t(260,535,'Resource',{size:38,a:'middle',c:C.yel,wt:700});
+  b.p(arrow(380,520,540,520),C.chalk,3);
+  b.p(rect(560,420,320,200),C.chalk,3.5);
+  b.t(720,535,'Repository',{size:52,a:'middle',wt:700}).w(250);
+  [[340,'relational database'],[460,'NoSQL'],[580,'file system'],[700,'object storage']].forEach(([y,lab],i) => {
+    b.p(arrow(895,520,1075,y,4,16),C.chalk,2.5);
+    if(i===0) b.p(cyl(1095,y-28,70,48),C.chalk,2.8);
+    if(i===1) b.p(cube(1100,y-22,46),C.chalk,2.8);
+    if(i===2) b.p(folder(1092,y-30,80,56),C.chalk,2.8);
+    if(i===3) b.p(cloud(1132,y,48,30),C.chalk,2.8);
+    b.t(1210,y+12,lab,{size:36,f:'l'});
+  });
+  b.t(800,815,'the Resource stays the same, the storage is a choice',{size:34,a:'middle',f:'l',c:C.dim});
+},
+/* 9 · process */
+b => {
+  head2(b,'3 · Process','elaborate it, if needed','only active Resources reach the Processors');
+  b.p(ell(260,380,105,52),C.dim,3);
+  b.t(260,392,'Resource',{size:34,a:'middle',c:C.dim});
+  b.t(260,470,'it just exists',{size:30,a:'middle',f:'l',c:C.dim}).w(200);
+  b.p(ell(260,610,105,52),C.yel,3.5);
+  b.t(260,622,'Resource',{size:34,a:'middle',c:C.yel,wt:700});
+  b.t(260,700,'it has work to do',{size:30,a:'middle',f:'l'}).w(200);
+  b.p(arrow(375,600,590,560),C.yel,3);
+  b.t(775,390,'Processors',{size:50,a:'middle',c:C.cy,wt:700});
+  b.p(rect(610,420,330,250),C.cy,3.5);
+  b.p(gear(730,535,52,10),C.yel,3).p(gear(835,595,36,8),C.chalk,3).w(200);
+  [[455,'business logic'],[555,'transformation'],[655,'external systems']].forEach(([y],i) => b.p(arrow(955,545,1105,y,4,14),C.chalk,2.5));
+  b.p(doc(1125,420,56,70),C.chalk,2.8);
+  b.p(rect(1118,535,38,38,1),C.chalk,2.8).p(ell(1188,554,19,19),C.chalk,2.8);
+  b.p(ell(1135,655,13,13),C.yel,3).p(line(1148,650,1180,628,1),C.yel,2.5).p(line(1149,660,1181,682,1),C.yel,2.5).p(ell(1187,623,7,7),C.yel,2.5).p(ell(1188,687,7,7),C.yel,2.5);
+  b.t(1240,467,'business logic',{size:36,f:'l'});
+  b.t(1240,567,'transformation',{size:36,f:'l'});
+  b.t(1240,667,'external systems',{size:36,f:'l'});
+  b.t(800,815,'optional: it comes into play only when there is something to do',{size:34,a:'middle',f:'l',c:C.dim});
+},
+/* 10 · domain scripting */
+b => {
+  head2(b,'In practice','domain scripting','acquire a Resource, change it, save it back');
+  b.p(rect(200,290,1050,450,2),C.chalk,3);
+  b.p(line(200,335,1250,335,1),C.dim,1.5);
+  b.p(ell(230,313,7,7),C.red,2).p(ell(255,313,7,7),C.yel,2).p(ell(280,313,7,7),C.grn,2);
+  const S=38, X=240;
+  code(b,X,410,[['Resource',C.cy],[' res',C.red],[' = Resource.resolve(',C.chalk],['"users/123"',C.yel],[', context)',C.chalk]],S);
+  code(b,X,475,[['var',C.dim],[' metadata',C.red],[' = res.getMetaData()',C.chalk]],S);
+  code(b,X,540,[['var',C.dim],[' content',C.red],[' = res.getContent()',C.chalk]],S); b.w(250);
+  code(b,X,605,[['…',C.dim],['  // your domain logic here',C.dim]],S); b.w(250);
+  code(b,X,680,[['Resource.save(',C.chalk],['"users/123"',C.yel],[', metadata, content, context);',C.chalk]],S); b.w(250);
+  b.p(poly([[1270,378],[1290,378],[1290,552],[1270,552]],false,.6),C.yel,2.5);
+  b.t(1315,477,'acquire',{size:40,c:C.yel,wt:700});
+  b.p(poly([[1270,578],[1290,578],[1290,618],[1270,618]],false,.4),C.cy,2.5);
+  b.t(1315,610,'modify',{size:40,c:C.cy,wt:700});
+  b.p(poly([[1270,652],[1290,652],[1290,692],[1270,692]],false,.4),C.grn,2.5);
+  b.t(1315,684,'save',{size:40,c:C.grn,wt:700}).w(250);
+  b.t(800,810,'one FQN to find it, one FQN to store it',{size:36,a:'middle',f:'l',c:C.dim});
+},
+/* 11 · other resources */
+b => {
+  head2(b,'In practice','anything can be a Resource','same call, very different things');
+  const S=36, X=330;
+  const rows = [
+    [370, '"query/mgv001@main/v2"', 'the result of a query on a generic DataSource', () => b.p(cyl(195,332,70,55),C.chalk,2.8)],
+    [550, '"asset/images/foto_01"', 'a generic asset', () => b.p(picture(185,510,95,75),C.chalk,2.8)],
+    [730, '"commands/invoices/print"', 'printing an invoice', () => { b.p(doc(195,682,60,78),C.chalk,2.8); b.p(gear(262,742,20,7),C.yel,2.5); }]
+  ];
+  rows.forEach(([y,fqn,desc,icon]) => {
+    icon();
+    code(b,X,y,[['Resource',C.cy],[' res',C.red],[' = Resource.resolve(',C.chalk],[fqn,C.yel],[', context);',C.chalk]],S);
+    b.t(X,y+45,desc,{size:30,f:'l',c:C.dim}).w(250);
+  });
+},
+/* 12 · at a glance */
+b => {
+  b.t(800,120,'A Resource at a glance',{size:62,a:'middle',wt:600}).w(250);
+  // resource
+  b.p(dashRect(470,390,660,230),C.red,3);
+  b.t(800,442,'Resource',{size:42,a:'middle',c:C.red,wt:700});
+  b.p(rect(510,470,260,100),C.yel,4.5);
+  b.t(640,533,'Metadata',{size:40,a:'middle',c:C.yel,wt:700});
+  b.p(rect(830,470,260,100),C.chalk,3);
+  b.t(960,533,'Content',{size:40,a:'middle',wt:700}).w(250);
+  // input
+  b.t(225,455,'FQN',{size:44,a:'middle',c:C.yel,wt:700});
+  b.t(225,512,'[ Obj / OV / OVL / Stream ]',{size:30,a:'middle',f:'l'});
+  b.p(arrow(400,505,460,505,1,16),C.chalk,3).w(200);
+  // repository
+  b.p(arrow(800,388,800,275,2,18),C.chalk,3);
+  b.p(dashRect(640,185,320,80),C.cy,3);
+  b.t(800,238,'Repository',{size:42,a:'middle',c:C.cy,wt:700}).w(200);
+  // processor
+  b.p(arrow(1092,520,1300,520,3,18),C.chalk,3);
+  b.p(rect(1310,483,220,75),C.grn,3);
+  b.t(1420,533,'Processor',{size:38,a:'middle',c:C.grn,wt:700}).w(200);
+  // outputs
+  b.p(line(640,572,640,690,1),C.chalk,3).p(arrow(640,690,300,690,3,18),C.chalk,3);
+  b.t(560,678,'resolve',{size:30,a:'middle',f:'l',c:C.dim});
+  b.t(175,700,'MKO (OV)',{size:36,a:'middle'}).w(150);
+  b.p(line(960,572,960,770,1),C.chalk,3).p(arrow(960,770,300,770,3,18),C.chalk,3);
+  b.t(175,780,'Stream',{size:36,a:'middle'}).w(150);
+  b.p(line(1420,560,1420,770,1),C.grn,3).p(arrow(1420,770,985,770,3,18),C.grn,3);
+},
+/* 13 · where is the web */
+b => {
+  head2(b,'Where is the Web in all this?','When does a Resource become web?','when a Connector exposes it');
+  // connectors
+  b.p(dashRect(50,300,290,490),C.org,3);
+  b.t(195,345,'Connectors',{size:38,a:'middle',c:C.org,wt:700});
+  b.p(rect(85,380,220,78),C.org,3).t(195,432,'HTTP',{size:40,a:'middle',wt:700});
+  b.p(rect(85,485,220,78),C.org,3).t(195,537,'FTP',{size:40,a:'middle',wt:700});
+  b.p(dashRect(85,590,220,78),C.dim,2.5).t(195,640,'… and more',{size:32,a:'middle',f:'l',c:C.dim}).w(250);
+  // in
+  b.p(arrow(345,500,505,500,2,18),C.chalk,3);
+  b.t(425,478,'FQN [payload]',{size:28,a:'middle',f:'l'});
+  // resource
+  b.p(dashRect(520,390,560,230),C.red,3);
+  b.t(800,440,'Resource',{size:40,a:'middle',c:C.red,wt:700});
+  b.p(rect(550,470,230,100),C.yel,4.5).t(665,533,'Metadata',{size:38,a:'middle',c:C.yel,wt:700});
+  b.p(rect(830,470,230,100),C.chalk,3).t(945,533,'Content',{size:38,a:'middle',wt:700}).w(200);
+  // repository
+  b.p(arrow(800,388,800,328,1,16),C.chalk,3);
+  b.p(dashRect(650,255,300,66),C.cy,3).t(800,300,'Repository',{size:38,a:'middle',c:C.cy,wt:700});
+  // processor
+  b.p(arrow(1062,520,1235,520,2,18),C.chalk,3);
+  b.p(rect(1245,483,210,75),C.grn,3).t(1350,533,'Processor',{size:36,a:'middle',c:C.grn,wt:700}).w(200);
+  // back to the connectors
+  b.p(line(665,572,665,690,1),C.chalk,3).p(arrow(665,690,350,690,3,18),C.chalk,3);
+  b.t(590,678,'resolve',{size:28,a:'middle',f:'l',c:C.dim});
+  b.t(430,676,'MKO (OV)',{size:30,a:'middle',f:'l'});
+  b.p(line(945,572,945,770,1),C.chalk,3).p(arrow(945,770,350,770,3,18),C.chalk,3);
+  b.t(430,756,'Stream',{size:30,a:'middle',f:'l'});
+  b.p(line(1350,560,1350,770,1),C.grn,3).p(arrow(1350,770,968,770,3,18),C.grn,3);
+},
+/* 14 · in practice: HTTP */
+b => {
+  head2(b,'In practice','a Resource over HTTP','any client, through a Connector, to the Resource Handler');
+  // clients
+  b.p(rect(80,265,230,70),C.chalk,2.8).t(195,310,'Browser',{size:32,a:'middle'});
+  b.p(rect(80,350,230,70),C.chalk,2.8).t(195,395,'client app',{size:32,a:'middle'});
+  b.p(rect(80,435,230,70),C.chalk,2.8).t(195,480,'curl',{size:32,a:'middle',f:'l'});
+  b.p(poly([[322,270],[336,270],[336,500],[322,500]],false,.6),C.dim,2.2).w(200);
+  b.p(arrow(345,360,575,360,2,18),C.chalk,3).t(452,342,'request',{size:28,a:'middle',f:'l'});
+  b.p(arrow(575,420,345,420,2,18),C.chalk,3).t(452,455,'response',{size:28,a:'middle',f:'l'}).w(200);
+  // mikup, containing the connector and the resource handler
+  b.p(dashRect(545,255,985,255),C.red,3);
+  b.t(570,292,'Mikup',{size:36,c:C.red,wt:700}).w(150);
+  b.p(rect(585,315,270,160),C.org,3.5);
+  b.t(720,385,'HTTP Connector',{size:34,a:'middle',c:C.org,wt:700});
+  b.t(720,425,'a pluggable module',{size:26,a:'middle',f:'l',c:C.dim}).w(200);
+  b.p(arrow(870,365,1095,365,2,18),C.chalk,3).t(982,347,'FQN [payload]',{size:26,a:'middle',f:'l'});
+  b.p(arrow(1095,425,870,425,2,18),C.chalk,3).t(982,460,'MKO / Stream',{size:26,a:'middle',f:'l'}).w(200);
+  b.p(rect(1110,315,390,160),C.chalk,3);
+  b.t(1305,378,'Resource Handler',{size:38,a:'middle',wt:700});
+  b.p(ell(1240,435,30,16),C.yel,2.5).p(ell(1305,435,30,16),C.yel,2.5).p(ell(1370,435,30,16),C.yel,2.5).w(250);
+  // terminal
+  b.p(rect(80,545,1440,250,2),C.chalk,3);
+  b.p(line(80,585,1520,585,1),C.dim,1.5);
+  b.p(ell(108,565,7,7),C.red,2).p(ell(133,565,7,7),C.yel,2).p(ell(158,565,7,7),C.grn,2);
+  b.t(1495,574,'the same Resources, over HTTP',{size:24,a:'end',f:'l',c:C.dim}).w(150);
+  const S=26, X=110, H='"http://localhost:8888/';
+  code(b,X,632,[['curl -v',C.chalk],[' -XPOST',C.cy],[' '+H,C.dim],['auth/login"',C.yel]],S); b.w(150);
+  code(b,X,677,[['curl -v',C.chalk],[' -XGET',C.cy],[' '+H,C.dim],['asset/images/foto_01"',C.yel],[" -H 'Authorization: Bearer SDFKRKSUJTLYKEÒLRKÒLTÒLEJQIUER'",C.dim]],S); b.w(150);
+  code(b,X,722,[['curl -v',C.chalk],[' -XPOST',C.cy],[' '+H,C.dim],['query/mgv001@main/v2.json"',C.yel]],S); b.w(150);
+  code(b,X,767,[['curl -v',C.chalk],[' -XPOST',C.cy],[' '+H,C.dim],['commands/invoices/print"',C.yel]],S);
+},
+/* 15 · MKO: formalizing information */
+b => {
+  head2(b,'One more thing','MKO, the Mikup Object','a unified data model');
+  b.t(800,285,'Ontology',{size:42,a:'middle',c:C.yel,wt:700,u:C.yel});
+  b.t(1060,285,'Semantics',{size:42,a:'middle',c:C.cy,wt:700,u:C.cy});
+  b.t(930,340,'MKO turns objects into ontology',{size:28,a:'middle',f:'l',c:C.dim}).w(220);
+
+  b.p(ell(280,515,150,88),C.chalk,3);
+  b.t(280,510,'Reality',{size:48,a:'middle',wt:700});
+  b.t(280,552,'anything around us',{size:26,a:'middle',f:'l',c:C.dim});
+  b.p(rect(125,660,150,58,1.5),C.chalk,2.5).t(200,698,'material',{size:27,a:'middle',f:'l'});
+  b.p(rect(300,660,150,58,1.5),C.chalk,2.5).t(375,698,'immaterial',{size:27,a:'middle',f:'l'});
+  b.p(line(240,600,200,658,2),C.dim,2).p(line(320,600,375,658,2),C.dim,2);
+
+  b.p(arrow(445,515,585,515,4,18),C.chalk,3);
+  b.t(515,490,'represent',{size:26,a:'middle',f:'l',c:C.dim});
+  b.p(rect(605,405,340,220,2),C.yel,3.5);
+  b.t(775,470,'structured',{size:42,a:'middle',c:C.yel,wt:700});
+  b.t(775,518,'content',{size:42,a:'middle',c:C.yel,wt:700});
+  b.t(775,575,'formal and unambiguous',{size:28,a:'middle',f:'l',c:C.dim});
+  b.t(775,675,'any piece of information',{size:30,a:'middle',f:'l'}).w(180);
+
+  b.p(arrow(960,515,1070,515,4,18),C.chalk,3);
+  b.p(rect(1090,385,380,315,2),C.red,3.5);
+  b.p(poly([[1090,385],[1280,465],[1470,385]],false,1),C.red,3);
+  b.t(1280,430,'Resource',{size:30,a:'middle',c:C.red,wt:700});
+  b.p(rect(1120,485,320,72,1.5),C.yel,3);
+  b.t(1280,532,'Metadata byte stream',{size:30,a:'middle',c:C.yel,wt:700});
+  b.p(rect(1120,580,320,72,1.5),C.cy,3);
+  b.t(1280,627,'Content byte stream',{size:30,a:'middle',c:C.cy,wt:700});
+  b.t(1280,755,'two standard-decodable streams',{size:27,a:'middle',f:'l',c:C.dim}).w(220);
+
+  b.t(800,815,'MKO is Mikup\'s data model: a formalism for application objects',{size:34,a:'middle',f:'l',c:C.chalk});
+}
+];
+const titles = ['First-class citizen','Two ways to understand it','Anatomy','Metadata','Content','Three verbs','Qualify','Persist','Process','Domain scripting','Other Resources','At a glance','Where is the Web','HTTP in practice','MKO, the Mikup Object'];
+const sceneIds = [
+  'first-class-citizen',
+  'two-ways-to-understand-it',
+  'anatomy',
+  'metadata',
+  'content',
+  'three-verbs',
+  'qualify',
+  'persist',
+  'process',
+  'domain-scripting',
+  'other-resources',
+  'at-a-glance',
+  'where-is-the-web',
+  'http-in-practice',
+  'mko-formalizing-information',
+];
+
+
+
+
+return { id: 'resource', title: 'Resource: the first-class citizen', scenes: scenes.map((render, index) => ({ id: 'resource/' + sceneIds[index], title: titles[index], render })) };
+
+})();
+
+const objects = (() => {
+
+const scenes = [
+  b => {
+    head2(b,'Coming next','MKO, the Mikup Object','a unified data model, with instances in memory');
+    b.p(rect(380,272,200,58),C.yel,3.5).t(480,312,'Object',{size:36,a:'middle',c:C.yel,wt:700});
+    b.p(line(445,332,280,388,2),C.chalk,2.5).p(line(515,332,690,388,2),C.chalk,2.5);
+    b.p(rect(140,390,260,88),C.chalk,3);
+    b.t(270,428,'scalar',{size:32,a:'middle',wt:700});
+    b.t(270,460,'a subtype of a primitive',{size:22,a:'middle',f:'l',c:C.dim});
+    b.p(rect(560,390,280,88),C.chalk,3);
+    b.t(700,428,'structured',{size:32,a:'middle',wt:700});
+    b.t(700,460,'a subtype of Obj',{size:22,a:'middle',f:'l',c:C.dim}).w(250);
+    b.p(line(700,480,700,518,1),C.chalk,2.5);
+    b.p(dashRect(500,520,420,230),C.cy,3);
+    b.t(518,553,'schema',{size:26,f:'l',c:C.cy});
+    b.t(518,603,'attrs',{size:28,c:C.yel,wt:700});
+    [610,715,820].forEach(x => {
+      b.p(rect(x,572,90,44,1),C.chalk,2.6).t(x+45,602,'attr',{size:24,a:'middle',f:'l'});
+      b.t(x+45,640,'+ props',{size:18,a:'middle',f:'l',c:C.grn});
+    });
+    b.w(200);
+    b.t(518,700,'props',{size:28,c:C.grn,wt:700});
+    b.t(610,692,'one value for every instance,',{size:22,f:'l'});
+    b.t(610,718,'stored in the schema itself',{size:22,f:'l',c:C.dim}).w(250);
+    b.p(poly([[912,594],[965,594],[965,301]],false,1),C.yel,2.6).p(arrow(965,301,590,301,1,16),C.yel,2.6);
+    b.t(978,430,'every attr',{size:24,f:'l',c:C.yel});
+    b.t(978,456,'is an Object',{size:24,f:'l',c:C.yel});
+    b.t(978,482,'… no limit',{size:22,f:'l',c:C.dim}).w(250);
+    b.p(cyl(185,568,70,52),C.chalk,2.8);
+    b.p(arrow(268,598,494,598,2,16),C.chalk,2.6).t(380,585,'instances',{size:24,a:'middle',f:'l'});
+    b.t(220,660,'taken from outside',{size:24,a:'middle',f:'l'});
+    b.t(220,688,'(e.g. a database)',{size:22,a:'middle',f:'l',c:C.dim});
+    b.t(220,730,'or embedded as data',{size:22,a:'middle',f:'l',c:C.dim}).w(250);
+    b.p(line(1090,280,1090,790,3),C.dim,2);
+    b.p(rect(1270,285,110,80),C.yel,3);
+    [305,325,345].forEach(y => b.p(line(1256,y,1268,y,.3),C.yel,2).p(line(1382,y,1394,y,.3),C.yel,2));
+    b.t(1325,336,'MKO',{size:30,a:'middle',c:C.yel,wt:700});
+    b.t(1325,397,'lives in memory',{size:24,a:'middle',f:'l'}).w(200);
+    b.p(arrow(1325,410,1325,468,1,16),C.chalk,2.8);
+    b.p(rect(1150,478,350,230),C.red,3.5);
+    b.p(poly([[1150,478],[1325,585],[1500,478]],false,1),C.red,3);
+    b.t(1325,628,'Resource',{size:34,a:'middle',c:C.red,wt:700});
+    b.t(1325,662,'ownership, permissions,',{size:24,a:'middle',f:'l'});
+    b.t(1325,690,'metadata',{size:24,a:'middle',f:'l'}).w(200);
+    b.t(1325,748,'addressed and acquired',{size:26,a:'middle',f:'l'});
+    b.t(1325,778,'in a Resource envelope',{size:26,a:'middle',f:'l',c:C.dim});
+  },
+];
+
+return {
+  id: 'ep_02',
+  title: 'MKO, the Mikup Object',
+  scenes: [{ id: 'ep_02/mko-the-mikup-object', title: 'MKO, the Mikup Object', render: scenes[0] }],
+};
+
+})();
+
+
+const manifest ={
+  id: 'manifest',
+  title: 'Manifest',
+  scenes: [{
+    id: 'manifest/intro',
+    title: 'Manifest',
+    render: b => {
+      b.t(800,330,'Mikup',{size:170,c:C.yel,a:'middle',wt:700,u:C.yel}).w(250);
+      b.t(800,475,'One grammar. Any resource. Any app.',{size:74,a:'middle',wt:600}).w(300);
+      b.t(800,550,'From a single microservice to a full monolith: one way to build them all.',{size:34,a:'middle',f:'l',c:C.dim}).w(250);
+      b.p(cyl(420,690,60,50),C.dim,2.5);
+      b.p(monitor(550,688,80,48),C.dim,2.5);
+      b.p(gear(730,712,30,8),C.dim,2.5);
+      b.p(lock(870,697,.45),C.dim,2.5);
+      b.p(globe(1010,712,32),C.dim,2.5);
+      b.p(star4(1150,712,32),C.dim,2.5);
+    },
+  }],
+};
+
+
+
+const presentation =definePresentation({
+  name: 'yt-ep_02',
+  id: 'ep_02',
+  folder: 'yt',
+  title: 'MK Objects and Ontology',
+  subtitle: 'A unified data model',
+  publishedAt: '2026-10-25',
+  ariaLabel: 'Mikup sketchboard: MKO, the Mikup Object',
+  playlist: [
+    { episode: objects },
+    { episode: manifest, role: 'closing', optional: true },
+  ],
+  player: { speed: 5, drawMode: 'simple', holdSeconds: 1, manual: true },
+});
+
+
+function mountShell({ title, subtitle, publishedAt, ariaLabel, standalone, player = {} }) {
+  document.title = title;
+  for(const href of ['https://fonts.googleapis.com', 'https://fonts.gstatic.com']) { const link=document.createElement('link'); link.rel='preconnect'; link.href=href; if(href.includes('gstatic')) link.crossOrigin='anonymous'; document.head.append(link); }
+  const fonts = document.createElement('link'); fonts.rel='stylesheet'; fonts.href='https://fonts.googleapis.com/css2?family=Caveat:wght@500;600;700&family=Patrick+Hand&display=swap'; document.head.append(fonts);
+  if(!standalone){ const stylesheet = document.createElement('link'); stylesheet.rel = 'stylesheet'; stylesheet.href = './deck.css'; document.head.append(stylesheet); }
+  const date = publishedAt ? new Intl.DateTimeFormat('en', { day:'numeric', month:'long', year:'numeric', timeZone:'UTC' }).format(new Date(publishedAt + 'T00:00:00Z')) : '';
+  const manualChecked = player.manual ? ' checked' : '';
+  document.body.innerHTML = `<div id="stage"><svg id="board" viewBox="0 0 1600 900" preserveAspectRatio="xMidYMid meet" aria-label="${ariaLabel}"><defs><filter id="pencilFx" filterUnits="userSpaceOnUse" x="0" y="0" width="1600" height="900"><feTurbulence type="fractalNoise" baseFrequency="0.8" numOctaves="2" seed="4" result="warp"/><feDisplacementMap in="SourceGraphic" in2="warp" scale="2.4" xChannelSelector="R" yChannelSelector="G" result="wobbly"/><feTurbulence type="fractalNoise" baseFrequency="1.4" numOctaves="1" seed="9" result="grain"/><feColorMatrix in="grain" type="matrix" values="0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 1.5 0 0 0 0.12" result="grainA"/><feComposite in="wobbly" in2="grainA" operator="in"/></filter></defs><rect width="1600" height="900" fill="#000"/><g id="layer"></g><g id="pencil" opacity="0"><g transform="rotate(-52) scale(.95)"><path d="M0 0 L26 -9 L26 9 Z" fill="#e3c39a"/><path d="M0 0 L9 -3.2 L9 3.2 Z" fill="#d9d9d9"/><rect x="26" y="-9" width="132" height="18" fill="#f2c94c"/><rect x="26" y="-2.5" width="132" height="2.5" fill="#cfa62a"/><rect x="158" y="-9.5" width="11" height="19" fill="#b9b9b9"/><rect x="169" y="-9" width="18" height="18" rx="4" fill="#e78f8f"/></g></g></svg><div id="start"><h1>${title}</h1><time class="startDate" datetime="${publishedAt}">${date}</time><p class="startSubtitle">${subtitle}</p><button id="startBtn" aria-label="Start the presentation">▶</button><p>press to start</p></div><div id="hud" aria-live="off"><span id="clock" hidden>00:00</span><span id="count">1 / 1</span></div><div id="prog" aria-hidden="true"><i></i></div><div id="bar" class="hide" role="toolbar" aria-label="Controls"><div class="row row1"><button id="restart" title="From the start (Home, R)" aria-label="Restart">⏮</button><button id="prev" title="Previous scene (←)" aria-label="Previous scene">◀</button><button id="play" title="Pause / resume (space)" aria-label="Pause">❚❚</button><button id="next" title="Next scene (→)" aria-label="Next scene">▶</button><div id="dots"></div></div><div class="row"><span id="drawCtl" role="radiogroup" aria-label="Drawing">draw <span class="seg"><label><input type="radio" name="draw" value="simple" checked><span class="opt">simple</span></label><label><input type="radio" name="draw" value="pencil"><span class="opt">pencil</span></label><label><input type="radio" name="draw" value="none"><span class="opt">none</span></label></span></span><span id="mfCtl">optional <label><input type="checkbox" id="mfStartChk" checked> opening</label><label><input type="checkbox" id="mfEndChk" checked> closing</label></span><label id="manualToggle"><input type="checkbox" id="manualChk"${manualChecked}> manual</label><label id="holdCtl">+<input type="number" id="holdIn" min="0" max="60" step="0.5" value="1">s</label><label id="clockToggle"><input type="checkbox" id="clockChk"> timer</label><button id="speed">3×</button><button id="fs">⛶</button></div></div></div>`;
+}
+
+
+
+function mountPresentation(presentation) {
+  mountShell(presentation);
+  const NS = 'http://www.w3.org/2000/svg';
+  const layer = document.getElementById('layer');
+  const pencil = document.getElementById('pencil');
+  setDrawingLayer(layer);
+const SCENE_META = presentation.scenes;
+const SCENES = SCENE_META.map(scene => scene.render);
+const TITLES = SCENE_META.map(scene => scene.title);
+const sceneSeed = id => [...id].reduce((value, char) => Math.imul(value ^ char.charCodeAt(0), 16777619) >>> 0, 2166136261);
+/* ---------- clock & tweens (pausable, speed-aware) ---------- */
+let paused=false, speed=presentation.player.speed ?? 3, vt=0, last=performance.now();
+let elapsed=0, clockOn=false, lastSec=-1;
+const tweens = new Set();
+function loop(t){
+  const raw = t-last, dt = Math.min(64, raw); last = t;
+  if(!paused) vt += dt*speed;
+  if(started && !paused && !finished) elapsed += raw;
+  if(clockOn){ const sec = Math.floor(elapsed/1000); if(sec!==lastSec){ lastSec = sec; clockEl.textContent = fmtTime(sec); } }
+  for(const tw of [...tweens]){
+    const p = Math.min(1, (vt-tw.t0)/tw.dur);
+    tw.fn(p);
+    if(p>=1){ tweens.delete(tw); tw.res(true); }
+  }
+  requestAnimationFrame(loop);
+}
+requestAnimationFrame(loop);
+function tween(dur, fn=()=>{}){ return new Promise(res => { const tw={t0:vt,dur:Math.max(1,dur),fn,res}; tweens.add(tw); fn(0); }); }
+function cancelAll(){ for(const tw of tweens) tw.res(false); tweens.clear(); }
+
+const movePencil = (x,y) => pencil.setAttribute('transform',`translate(${f(x)},${f(y)})`);
+let pencilOn = false, drawMode = 'simple', drawing = false;
+const clockEl = document.getElementById('clock'), countEl = document.getElementById('count'), progEl = document.querySelector('#prog i');
+const fmtTime = sec => { const h=Math.floor(sec/3600), m=Math.floor(sec/60)%60, z=sec%60, p=n=>String(n).padStart(2,'0'); return (h?h+':'+p(m):p(m))+':'+p(z); };
+function setProg(frac){ const n = ORDER.length||1; progEl.style.width = (Math.min(1,(cur+frac)/n)*100).toFixed(2)+'%'; }
+let manual = false, advanceRes = null;
+let extraHold = presentation.player.holdSeconds ?? 1;
+const showPencil = v => { pencil.style.opacity = (v && pencilOn) ? 1 : 0; };
+
+/* ---------- playing ops ---------- */
+let gen=0, cur=0, uid=0, finished=false, started=false;
+async function playOp(op, grp, g){
+  if(g!==gen) return false;
+  if(op.k==='w'){ showPencil(false); return drawMode==='none' ? true : tween(op.ms); }
+  if(op.k==='p'){
+    const el = document.createElementNS(NS,'path');
+    el.setAttribute('d',op.d); el.setAttribute('stroke',op.c); el.setAttribute('stroke-width',op.w);
+    grp.appendChild(el);
+    if(drawMode==='none') return true;
+    const L = el.getTotalLength();
+    el.style.strokeDasharray = `${L} ${L+4}`; el.style.strokeDashoffset = L;
+    showPencil(true);
+    const ok = await tween(Math.min(1600, Math.max(160, L/0.9)), p => {
+      el.style.strokeDashoffset = L*(1-p);
+      const pt = el.getPointAtLength(L*p); movePencil(pt.x, pt.y);
+    });
+    if(ok) el.style.strokeDasharray = 'none';
+    return ok;
+  }
+  if(op.k==='t'){
+    const el = document.createElementNS(NS,'text');
+    el.setAttribute('x',op.x); el.setAttribute('y',op.y);
+    el.setAttribute('text-anchor', op.a||'start');
+    el.setAttribute('font-family', FONT[op.f||'h']);
+    el.setAttribute('font-size', op.size||40);
+    el.setAttribute('font-weight', op.wt||500);
+    el.setAttribute('fill', op.c||C.chalk);
+    el.textContent = op.s;
+    grp.appendChild(el);
+    if(drawMode==='none'){
+      if(!op.u) return true;
+      const bb0 = el.getBBox(), y = op.y + (op.size||40)*.17, pts=[];
+      for(let i=0;i<=5;i++) pts.push([bb0.x-6+(bb0.width+12)*i/5, y+j(3)]);
+      return playOp({k:'p', d:poly(pts,false,2), c:op.u, w:3.5}, grp, g);
+    }
+    const bb = el.getBBox();
+    const id = 'clip'+(++uid);
+    const cp = document.createElementNS(NS,'clipPath'); cp.id = id;
+    const r = document.createElementNS(NS,'rect');
+    r.setAttribute('x',bb.x-12); r.setAttribute('y',bb.y-16); r.setAttribute('height',bb.height+32); r.setAttribute('width',0);
+    cp.appendChild(r); grp.appendChild(cp);
+    el.setAttribute('clip-path',`url(#${id})`);
+    showPencil(true);
+    const n = op.s.length;
+    const ok = await tween(Math.min(2600, Math.max(300, bb.width/0.6)), p => {
+      r.setAttribute('width', (bb.width+24)*p);
+      movePencil(bb.x + bb.width*p, bb.y + bb.height*(.55 + .2*Math.sin(p*n*2.3)));
+    });
+    if(!ok) return false;
+    if(op.u){
+      const y = op.y + (op.size||40)*.17, x0 = bb.x-6, x1 = bb.x+bb.width+6, pts=[];
+      for(let i=0;i<=5;i++) pts.push([x0+(x1-x0)*i/5, y+j(3)]);
+      return playOp({k:'p', d:poly(pts,false,2), c:op.u, w:3.5}, grp, g);
+    }
+    return true;
+  }
+  return true;
+}
+
+async function runScene(i){
+  const g = ++gen; cur = i; finished = false; updateUI();
+  layer.innerHTML = '';
+  const grp = document.createElementNS(NS,'g');
+  grp.setAttribute('filter','url(#pencilFx)');
+  layer.appendChild(grp);
+  const sid = ORDER[i];
+  seed(sceneSeed(SCENE_META[sid].id));
+  const b = B(); SCENES[sid](b);
+  setProg(0); drawing = true;
+  if(!await tween(drawMode==='none' ? 120 : 350) || g!==gen) return;
+  const total = b.ops.length || 1; let done = 0;
+  for(const op of b.ops){
+    if(!await playOp(op, grp, g) || g!==gen) return;
+    setProg(++done/total*.9);
+    if(drawMode!=='none' && (!await tween(60) || g!==gen)) return;
+  }
+  drawing = false; setProg(1);
+  showPencil(false);
+  if(cur >= ORDER.length-1){ finished = true; updateUI(); showBar(); return; }
+  if(manual){ const ok = await new Promise(r => { advanceRes = r; }); if(!ok || g!==gen) return; }
+  else if(!await tween(2600 + extraHold*1000*speed) || g!==gen) return;
+  if(!await tween(700, p => { grp.style.opacity = 1-p; }) || g!==gen) return;
+  runScene(cur+1);
+}
+function advance(){
+  if(!started || finished) return;
+  if(advanceRes){ const r = advanceRes; advanceRes = null; r(true); }
+  else jump(cur+1);
+}
+function jump(i){ if(!started) return start(i); if(advanceRes){ const r = advanceRes; advanceRes = null; r(false); } cancelAll(); paused = false; showPencil(false); runScene(Math.max(0, Math.min(ORDER.length-1, i))); }
+
+/* ---------- controls ---------- */
+const bar = document.getElementById('bar'), stage = document.getElementById('stage');
+const playBtn = document.getElementById('play'), speedBtn = document.getElementById('speed');
+const dots = document.getElementById('dots');
+const mfCtl = document.getElementById('mfCtl');
+const [mfStartCtl, mfEndCtl] = mfCtl.querySelectorAll('label');
+const hasOptionalOpening = SCENE_META.some(scene => scene.optional && scene.role==='opening');
+const hasOptionalClosing = SCENE_META.some(scene => scene.optional && scene.role==='closing');
+let ORDER = [], mfStart = hasOptionalOpening && (presentation.player.opening ?? true), mfEnd = hasOptionalClosing && (presentation.player.closing ?? true);
+document.getElementById('mfStartChk').checked = mfStart;
+document.getElementById('mfEndChk').checked = mfEnd;
+mfStartCtl.hidden = !hasOptionalOpening;
+mfEndCtl.hidden = !hasOptionalClosing;
+mfCtl.hidden = !hasOptionalOpening && !hasOptionalClosing;
+function buildDots(){
+  dots.innerHTML = '';
+  ORDER.forEach((sid,i) => { const t = TITLES[sid]; const d=document.createElement('button'); d.title=t; d.setAttribute('aria-label',`Scene ${i+1}: ${t}`); d.onclick=()=>jump(i); dots.appendChild(d); });
+}
+function buildOrder(){
+  const sid = ORDER[cur];
+  ORDER = SCENE_META.flatMap((scene, index) => {
+    if(!scene.optional) return [index];
+    if(scene.role==='opening') return mfStart ? [index] : [];
+    if(scene.role==='closing') return mfEnd ? [index] : [];
+    return [index];
+  });
+  if(sid !== undefined) cur = Math.max(0, ORDER.indexOf(sid));
+  buildDots();
+  if(typeof updateUI === 'function') updateUI();
+}
+buildOrder();
+function updateUI(){
+  [...dots.children].forEach((d,i) => d.classList.toggle('on', i===cur));
+  countEl.textContent = `${cur+1} / ${ORDER.length}`;
+  const icon = !started ? '▶' : finished ? '↺' : (paused ? '▶' : '❚❚');
+  playBtn.textContent = icon;
+  playBtn.setAttribute('aria-label', !started ? 'Start' : finished ? 'Restart' : (paused ? 'Resume' : 'Pause'));
+}
+function togglePlay(){
+  if(!started) return start();
+  if(finished) return restart();
+  paused = !paused; updateUI(); showBar();
+}
+let hideT;
+function showBar(){ /* the toolbar now appears only on hover near the bottom edge */ }
+const setBar = v => bar.classList.toggle('hide', !v);
+function nearBar(y){ const r = bar.getBoundingClientRect(); return y > r.top - 50; }
+function onPointer(y){
+  const near = nearBar(y);
+  setBar(near);
+  stage.classList.remove('nocursor');
+  clearTimeout(hideT);
+  hideT = setTimeout(() => { if(!bar.matches(':hover')) stage.classList.add('nocursor'); }, 2000);
+}
+const SPEEDS = [.75,1,1.5,2,2.5,3,4,5];
+speedBtn.onclick = () => { speed = SPEEDS[(SPEEDS.indexOf(speed)+1)%SPEEDS.length]; speedBtn.textContent = speed+'×'; showBar(); };
+speedBtn.textContent = speed+'×';
+playBtn.onclick = togglePlay;
+updateUI();
+document.getElementById('prev').onclick = () => jump(cur-1);
+document.getElementById('next').onclick = () => jump(cur+1);
+function restart(){ elapsed = 0; lastSec = -1; if(clockOn) clockEl.textContent = fmtTime(0); jump(0); }
+document.getElementById('restart').onclick = restart;
+function toggleFs(){ try{ if(document.fullscreenElement) document.exitFullscreen(); else document.documentElement.requestFullscreen(); }catch(e){} }
+document.getElementById('fs').onclick = toggleFs;
+const drawRadios = [...document.querySelectorAll('input[name="draw"]')];
+const DRAW_MODES = ['simple','pencil','none'];
+function setDraw(m){
+  const prev = drawMode; drawMode = m;
+  drawRadios.forEach(r => r.checked = r.value===m);
+  pencilOn = m==='pencil'; if(!pencilOn) pencil.style.opacity = 0;
+  if(m==='none' && prev!=='none' && started && drawing) jump(cur);
+}
+setDraw(presentation.player.drawMode ?? 'simple');
+drawRadios.forEach(r => r.addEventListener('change', () => { if(r.checked) setDraw(r.value); }));
+const setPencil = v => setDraw(v ? 'pencil' : 'simple');
+const clockChk = document.getElementById('clockChk');
+function setClock(v){ clockOn = v; clockChk.checked = v; clockEl.hidden = !v; lastSec = -1; if(v) clockEl.textContent = fmtTime(Math.floor(elapsed/1000)); }
+clockChk.addEventListener('change', () => setClock(clockChk.checked));
+const manualChk = document.getElementById('manualChk');
+function setManual(v){
+  manual = v; manualChk.checked = v;
+  if(!v && advanceRes){ const r = advanceRes; advanceRes = null; r(true); }
+  showBar();
+}
+setManual(presentation.player.manual ?? false);
+manualChk.addEventListener('change', () => setManual(manualChk.checked));
+document.getElementById('mfStartChk').addEventListener('change', e => { mfStart = e.target.checked; buildOrder(); });
+document.getElementById('mfEndChk').addEventListener('change', e => { mfEnd = e.target.checked; buildOrder(); });
+const holdIn = document.getElementById('holdIn');
+holdIn.addEventListener('input', () => { const v = parseFloat(holdIn.value); extraHold = isFinite(v) ? Math.max(0, Math.min(60, v)) : 0; });
+holdIn.addEventListener('change', () => { holdIn.value = extraHold; });
+stage.addEventListener('mousemove', e => onPointer(e.clientY), {passive:true});
+stage.addEventListener('mouseleave', () => setBar(false));
+stage.addEventListener('touchstart', e => { const t = e.touches[0]; if(t) onPointer(t.clientY); }, {passive:true});
+document.addEventListener('keydown', e => {
+  if(e.target && e.target.name === 'draw' && e.key.startsWith('Arrow')) return;
+  if(e.target && e.target.id === 'holdIn'){ if(e.key==='Enter' || e.key==='Escape') e.target.blur(); return; }
+  if(e.key===' '){ e.preventDefault(); togglePlay(); }
+  else if(e.key==='ArrowRight') jump(cur+1);
+  else if(e.key==='ArrowLeft') jump(cur-1);
+  else if(e.key==='r'||e.key==='R'||e.key==='Home'){ e.preventDefault(); restart(); }
+  else if(e.key==='End'){ e.preventDefault(); jump(ORDER.length-1); }
+  else if(e.key==='d'||e.key==='D') setDraw(DRAW_MODES[(DRAW_MODES.indexOf(drawMode)+1)%3]);
+  else if(e.key==='t'||e.key==='T') setClock(!clockOn);
+  else if(e.key==='f'||e.key==='F') toggleFs();
+  else if(e.key==='p'||e.key==='P') setPencil(!pencilOn);
+  else if(e.key==='m'||e.key==='M') setManual(!manual);
+  else if(e.key==='Enter'){ if(e.target && e.target.closest && e.target.closest('button')) return; e.preventDefault(); advance(); }
+});
+
+async function start(at){
+  if(started) return; started = true;
+  const first = Number.isInteger(at) ? Math.max(0, Math.min(ORDER.length-1, at)) : 0;
+  document.getElementById('start').remove();
+  elapsed = 0; stage.classList.add('live');
+  try{
+    await Promise.race([
+      Promise.all([document.fonts.load('600 60px Caveat'), document.fonts.load('40px "Patrick Hand"')]),
+      new Promise(r => setTimeout(r, 2500))
+    ]);
+  }catch(e){}
+  showBar();
+  runScene(first);
+}
+document.getElementById('startBtn').onclick = () => start();
+document.getElementById('startBtn').focus();
+
+}
+
+
+presentation.standalone = true;
+
+mountPresentation(presentation);
+  </script>
+</body>
+</html>

@@ -326,59 +326,42 @@ b => {
   code(b,X,722,[['curl -v',C.chalk],[' -XPOST',C.cy],[' '+H,C.dim],['query/mgv001@main/v2.json"',C.yel]],S); b.w(150);
   code(b,X,767,[['curl -v',C.chalk],[' -XPOST',C.cy],[' '+H,C.dim],['commands/invoices/print"',C.yel]],S);
 },
-/* 15 · coming next: MKO */
+/* 15 · MKO: formalizing information */
 b => {
-  head2(b,'Coming next','MKO, the Mikup Object','a unified data model, with instances in memory');
-  // 1 · scalar or structured
-  b.p(rect(380,272,200,58),C.yel,3.5).t(480,312,'Object',{size:36,a:'middle',c:C.yel,wt:700});
-  b.p(line(445,332,280,388,2),C.chalk,2.5).p(line(515,332,690,388,2),C.chalk,2.5);
-  b.p(rect(140,390,260,88),C.chalk,3);
-  b.t(270,428,'scalar',{size:32,a:'middle',wt:700});
-  b.t(270,460,'a subtype of a primitive',{size:22,a:'middle',f:'l',c:C.dim});
-  b.p(rect(560,390,280,88),C.chalk,3);
-  b.t(700,428,'structured',{size:32,a:'middle',wt:700});
-  b.t(700,460,'a subtype of Obj',{size:22,a:'middle',f:'l',c:C.dim}).w(250);
-  // 2 · the schema: attrs + props
-  b.p(line(700,480,700,518,1),C.chalk,2.5);
-  b.p(dashRect(500,520,420,230),C.cy,3);
-  b.t(518,553,'schema',{size:26,f:'l',c:C.cy});
-  b.t(518,603,'attrs',{size:28,c:C.yel,wt:700});
-  [610,715,820].forEach(x => {
-    b.p(rect(x,572,90,44,1),C.chalk,2.6).t(x+45,602,'attr',{size:24,a:'middle',f:'l'});
-    b.t(x+45,640,'+ props',{size:18,a:'middle',f:'l',c:C.grn});
-  });
-  b.w(200);
-  b.t(518,700,'props',{size:28,c:C.grn,wt:700});
-  b.t(610,692,'one value for every instance,',{size:22,f:'l'});
-  b.t(610,718,'stored in the schema itself',{size:22,f:'l',c:C.dim}).w(250);
-  // 3 · every attr is an Object, without limit
-  b.p(poly([[912,594],[965,594],[965,301]],false,1),C.yel,2.6).p(arrow(965,301,590,301,1,16),C.yel,2.6);
-  b.t(978,430,'every attr',{size:24,f:'l',c:C.yel});
-  b.t(978,456,'is an Object',{size:24,f:'l',c:C.yel});
-  b.t(978,482,'… no limit',{size:22,f:'l',c:C.dim}).w(250);
-  // instances
-  b.p(cyl(185,568,70,52),C.chalk,2.8);
-  b.p(arrow(268,598,494,598,2,16),C.chalk,2.6).t(380,585,'instances',{size:24,a:'middle',f:'l'});
-  b.t(220,660,'taken from outside',{size:24,a:'middle',f:'l'});
-  b.t(220,688,'(e.g. a database)',{size:22,a:'middle',f:'l',c:C.dim});
-  b.t(220,730,'or embedded as data',{size:22,a:'middle',f:'l',c:C.dim}).w(250);
-  b.p(line(1090,280,1090,790,3),C.dim,2);
-  // 5 · in memory, enveloped as a Resource
-  b.p(rect(1270,285,110,80),C.yel,3);
-  [305,325,345].forEach(y => b.p(line(1256,y,1268,y,.3),C.yel,2).p(line(1382,y,1394,y,.3),C.yel,2));
-  b.t(1325,336,'MKO',{size:30,a:'middle',c:C.yel,wt:700});
-  b.t(1325,397,'lives in memory',{size:24,a:'middle',f:'l'}).w(200);
-  b.p(arrow(1325,410,1325,468,1,16),C.chalk,2.8);
-  b.p(rect(1150,478,350,230),C.red,3.5);
-  b.p(poly([[1150,478],[1325,585],[1500,478]],false,1),C.red,3);
-  b.t(1325,628,'Resource',{size:34,a:'middle',c:C.red,wt:700});
-  b.t(1325,662,'ownership, permissions,',{size:24,a:'middle',f:'l'});
-  b.t(1325,690,'metadata',{size:24,a:'middle',f:'l'}).w(200);
-  b.t(1325,748,'addressed and acquired',{size:26,a:'middle',f:'l'});
-  b.t(1325,778,'in a Resource envelope',{size:26,a:'middle',f:'l',c:C.dim});
+  head2(b,'One more thing','MKO, the Mikup Object','a unified data model');
+  b.t(800,285,'Ontology',{size:42,a:'middle',c:C.yel,wt:700,u:C.yel});
+  b.t(1060,285,'Semantics',{size:42,a:'middle',c:C.cy,wt:700,u:C.cy});
+  b.t(930,340,'MKO turns objects into ontology',{size:28,a:'middle',f:'l',c:C.dim}).w(220);
+
+  b.p(ell(280,515,150,88),C.chalk,3);
+  b.t(280,510,'Reality',{size:48,a:'middle',wt:700});
+  b.t(280,552,'anything around us',{size:26,a:'middle',f:'l',c:C.dim});
+  b.p(rect(125,660,150,58,1.5),C.chalk,2.5).t(200,698,'material',{size:27,a:'middle',f:'l'});
+  b.p(rect(300,660,150,58,1.5),C.chalk,2.5).t(375,698,'immaterial',{size:27,a:'middle',f:'l'});
+  b.p(line(240,600,200,658,2),C.dim,2).p(line(320,600,375,658,2),C.dim,2);
+
+  b.p(arrow(445,515,585,515,4,18),C.chalk,3);
+  b.t(515,490,'represent',{size:26,a:'middle',f:'l',c:C.dim});
+  b.p(rect(605,405,340,220,2),C.yel,3.5);
+  b.t(775,470,'structured',{size:42,a:'middle',c:C.yel,wt:700});
+  b.t(775,518,'content',{size:42,a:'middle',c:C.yel,wt:700});
+  b.t(775,575,'formal and unambiguous',{size:28,a:'middle',f:'l',c:C.dim});
+  b.t(775,675,'any piece of information',{size:30,a:'middle',f:'l'}).w(180);
+
+  b.p(arrow(960,515,1070,515,4,18),C.chalk,3);
+  b.p(rect(1090,385,380,315,2),C.red,3.5);
+  b.p(poly([[1090,385],[1280,465],[1470,385]],false,1),C.red,3);
+  b.t(1280,430,'Resource',{size:30,a:'middle',c:C.red,wt:700});
+  b.p(rect(1120,485,320,72,1.5),C.yel,3);
+  b.t(1280,532,'Metadata byte stream',{size:30,a:'middle',c:C.yel,wt:700});
+  b.p(rect(1120,580,320,72,1.5),C.cy,3);
+  b.t(1280,627,'Content byte stream',{size:30,a:'middle',c:C.cy,wt:700});
+  b.t(1280,755,'two standard-decodable streams',{size:27,a:'middle',f:'l',c:C.dim}).w(220);
+
+  b.t(800,815,'MKO is Mikup\'s data model: a formalism for application objects',{size:34,a:'middle',f:'l',c:C.chalk});
 }
 ];
-const titles = ['First-class citizen','Two ways to understand it','Anatomy','Metadata','Content','Three verbs','Qualify','Persist','Process','Domain scripting','Other Resources','At a glance','Where is the Web','HTTP in practice','Coming next: MKO'];
+const titles = ['First-class citizen','Two ways to understand it','Anatomy','Metadata','Content','Three verbs','Qualify','Persist','Process','Domain scripting','Other Resources','At a glance','Where is the Web','HTTP in practice','MKO, the Mikup Object'];
 const sceneIds = [
   'first-class-citizen',
   'two-ways-to-understand-it',
@@ -394,7 +377,7 @@ const sceneIds = [
   'at-a-glance',
   'where-is-the-web',
   'http-in-practice',
-  'coming-next-mko',
+  'mko-formalizing-information',
 ];
 
 

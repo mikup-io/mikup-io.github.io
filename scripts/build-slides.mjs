@@ -8,7 +8,7 @@ const config = source => stripExports(source).replace(/^import .*;\n/gm, '').rep
 
 const presentationMetadata = {};
 
-const [css, drawing, shell, player, presentation, microApp, resource, manifest, registry] = await Promise.all([
+const [css, drawing, shell, player, presentation, microApp, resource, objects, manifest, registry] = await Promise.all([
   read('slides/runtime/deck.css'),
   read('slides/runtime/drawing.js'),
   read('slides/runtime/shell.js'),
@@ -16,6 +16,7 @@ const [css, drawing, shell, player, presentation, microApp, resource, manifest, 
   read('slides/runtime/presentation.js'),
   read('slides/episodes/micro-app.js'),
   read('slides/episodes/resource.js'),
+  read('slides/episodes/objects.js'),
   read('slides/episodes/manifest.js'),
   read('slides/presentations/registry.js'),
 ]);
@@ -40,6 +41,7 @@ for(const name of names){
     stripExports(presentation),
     episode(microApp, 'microApp'),
     episode(resource, 'resource'),
+    episode(objects, 'objects'),
     stripExports(manifest).replace(/^import .*;\n/gm, '').replace('default ', 'const manifest ='),
     config(spec),
     stripExports(shell).replace("new URL('./deck.css', import.meta.url)", "'./deck.css'"),
