@@ -7,7 +7,7 @@ export default definePresentation({
   id: 'ep_00',
   folder: 'yt',
   title: 'What happens to software in the AI era?',
-  subtitle: 'An introduction to Mikup as a Micro App.',
+  subtitle: 'Youtube episode #00 (Trailer)',
   publishedAt: '2026-10-23',
   ariaLabel: 'Animated Mikup sketchboard: What happens to software in the AI era?',
   playlist: [

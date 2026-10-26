@@ -7,7 +7,7 @@ export default definePresentation({
   id: 'ep_01',
   folder: 'yt',
   title: 'Resource: the first-class citizen',
-  subtitle: 'The Resource model, lifecycle, and HTTP access.',
+  subtitle: 'Youtube episode #01',
   publishedAt: '2026-10-22',
   ariaLabel: 'Animated Mikup sketchboard: Resource, the first-class citizen',
   playlist: [

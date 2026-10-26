@@ -14,7 +14,7 @@ const presentations = [
 ];
 
 
-const presentationMetadata = {"yt-ep_02":{"title":"MK Objects and Ontology","subtitle":"A unified data model","publishedAt":"2026-10-25","href":"./yt/ep_02.html"},"linux-day_2026":{"title":"What happens to software in the AI era?","subtitle":"Linux day 2026","publishedAt":"2026-10-23","href":"./events/linux-day_2026.html"},"yt-ep_00":{"title":"What happens to software in the AI era?","subtitle":"An introduction to Mikup as a Micro App.","publishedAt":"2026-10-23","href":"./yt/ep_00.html"},"yt-ep_01":{"title":"Resource: the first-class citizen","subtitle":"The Resource model, lifecycle, and HTTP access.","publishedAt":"2026-10-22","href":"./yt/ep_01.html"}};
+const presentationMetadata = {"yt-ep_02":{"title":"MK Objects and Ontology","subtitle":"A unified data model","publishedAt":"2026-10-25","href":"./yt/ep_02.html"},"linux-day_2026":{"title":"What happens to software in the AI era?","subtitle":"Linux day 2026","publishedAt":"2026-10-23","href":"./events/linux-day_2026.html"},"yt-ep_00":{"title":"What happens to software in the AI era?","subtitle":"Youtube episode #00 (Trailer)","publishedAt":"2026-10-23","href":"./yt/ep_00.html"},"yt-ep_01":{"title":"Resource: the first-class citizen","subtitle":"Youtube episode #01","publishedAt":"2026-10-22","href":"./yt/ep_01.html"}};
 const catalogPresentations = presentations.map(presentation => ({
   ...presentation,
   ...presentationMetadata[presentation.name],
