@@ -22,8 +22,11 @@
   body{ background:var(--bg); color:var(--ink); font-family:"Patrick Hand","Comic Sans MS",cursive,sans-serif; overflow:hidden; }
   #stage{ position:relative; width:100%; height:100%; background:var(--bg); }
   #stage.nocursor{ cursor:none; }
-  svg#board{ width:100%; height:100%; display:block; }
+  svg#board{ width:100%; height:100%; display:block; touch-action:pan-y pinch-zoom; }
   #layer path{ fill:none; stroke-linecap:round; stroke-linejoin:round; }
+  @keyframes blink-border{ 0%,100%{ opacity:1; } 50%{ opacity:.15; } }
+  #layer path.blink-border{ animation:blink-border .55s ease-in-out 3; }
+  @media (prefers-reduced-motion: reduce){ #layer path.blink-border{ animation:none; } }
   #pencil{ transition:opacity .25s ease; pointer-events:none; }
 
   #start{ position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:18px; background:var(--bg); z-index:5; }
@@ -84,7 +87,7 @@
 <body>
   <script>
 const C = { chalk:'#ecebe6', dim:'#8f8e88', yel:'#f4d35e', cy:'#7fd3e6', red:'#ff7a6b', grn:'#9be38f', org:'#f5a35c' };
-const FONT = { h:'Caveat, "Patrick Hand", cursive', l:'"Patrick Hand", Caveat, cursive' };
+const FONT = { h:'Caveat, "Patrick Hand", cursive', l:'"Patrick Hand", Caveat, cursive', m:'"DejaVu Sans Mono", "Courier New", monospace' };
 const NS = 'http://www.w3.org/2000/svg';
 
 /* ---------- seeded randomness for the hand-drawn wobble ---------- */
@@ -162,7 +165,7 @@ function B(){
   const ops=[];
   const b = {
     ops,
-    p(d,c=C.chalk,w=3){ (Array.isArray(d)?d:[d]).forEach(x => ops.push({k:'p',d:x,c,w})); return b; },
+    p(d,c=C.chalk,w=3,o={}){ (Array.isArray(d)?d:[d]).forEach(x => ops.push({k:'p',d:x,c,w,...o})); return b; },
     t(x,y,s,o={}){ ops.push({k:'t',x,y,s,...o}); return b; },
     w(ms){ ops.push({k:'w',ms}); return b; }
   };
@@ -898,56 +901,198 @@ const objects = (() => {
 
 const scenes = [
   b => {
-    head2(b,'Coming next','MKO, the Mikup Object','a unified data model, with instances in memory');
-    b.p(rect(380,272,200,58),C.yel,3.5).t(480,312,'Object',{size:36,a:'middle',c:C.yel,wt:700});
-    b.p(line(445,332,280,388,2),C.chalk,2.5).p(line(515,332,690,388,2),C.chalk,2.5);
-    b.p(rect(140,390,260,88),C.chalk,3);
-    b.t(270,428,'scalar',{size:32,a:'middle',wt:700});
-    b.t(270,460,'a subtype of a primitive',{size:22,a:'middle',f:'l',c:C.dim});
-    b.p(rect(560,390,280,88),C.chalk,3);
-    b.t(700,428,'structured',{size:32,a:'middle',wt:700});
-    b.t(700,460,'a subtype of Obj',{size:22,a:'middle',f:'l',c:C.dim}).w(250);
-    b.p(line(700,480,700,518,1),C.chalk,2.5);
-    b.p(dashRect(500,520,420,230),C.cy,3);
-    b.t(518,553,'schema',{size:26,f:'l',c:C.cy});
-    b.t(518,603,'attrs',{size:28,c:C.yel,wt:700});
-    [610,715,820].forEach(x => {
-      b.p(rect(x,572,90,44,1),C.chalk,2.6).t(x+45,602,'attr',{size:24,a:'middle',f:'l'});
-      b.t(x+45,640,'+ props',{size:18,a:'middle',f:'l',c:C.grn});
+    head2(b,'Mikup Object (MKO) vs. OOP Class','familiar concepts, broader reach','Mikup Objects extend object-oriented programming');
+    b.t(175,330,'Obj',{size:42,c:C.red,wt:700});
+    b.p(arrow(300,316,507,316,2,18),C.chalk,3);
+    b.t(550,330,'Class',{size:42,c:C.yel,wt:700});
+
+    const row = (y, left, right, color) => {
+      b.t(235,y,left,{size:40,c:C.red,wt:700});
+      b.p(arrow(405,y-14,507,y-14,2,16),C.chalk,3);
+      b.t(550,y,right,{size:40,c:color,wt:700});
+    };
+    row(400,'Name','Class name',C.yel);
+    row(455,'Description','Annotation',C.yel);
+    row(510,'Type','Complete Class name',C.yel);
+    b.t(940,510,'(with namespace/package)',{size:25,f:'l',c:C.chalk});
+    row(565,'Attrs','Attributes',C.yel);
+    b.t(850,565,'Obj collection',{size:33,c:C.cy,wt:700});
+    b.t(1030,565,'(when: no type or type=Obj or type Obj sub types)',{size:25,f:'l',c:C.chalk});
+    row(620,'Props','Annotations',C.yel);
+    b.t(850,620,'Obj collection',{size:33,c:C.cy,wt:700});
+
+    b.t(800,720,'MKO is not OOP: objects describe data and their meaning',{size:38,a:'middle',c:C.cy,wt:700});
+  },
+  b => {
+    head2(b,'Obj: the building block','one node, every level','a Mikup schema is built from Obj nodes');
+
+    b.p(rect(70,325,730,400,2),C.yel,3.5);
+    b.t(435,390,'Obj',{size:52,a:'middle',c:C.yel,wt:700});
+    b.p(line(110,420,760,420,1),C.dim,2);
+    [['name + description','identity and meaning'],['type','declared type'],['attrs','nested structure'],['props','associated properties']].forEach(([field,meaning],index) => {
+      const y = 480 + index*65;
+      b.t(110,y,field,{size:40,c:index===3?C.cy:C.chalk,wt:700});
+      b.t(765,y,meaning,{size:30,a:'end',f:'l',c:C.dim});
     });
-    b.w(200);
-    b.t(518,700,'props',{size:28,c:C.grn,wt:700});
-    b.t(610,692,'one value for every instance,',{size:22,f:'l'});
-    b.t(610,718,'stored in the schema itself',{size:22,f:'l',c:C.dim}).w(250);
-    b.p(poly([[912,594],[965,594],[965,301]],false,1),C.yel,2.6).p(arrow(965,301,590,301,1,16),C.yel,2.6);
-    b.t(978,430,'every attr',{size:24,f:'l',c:C.yel});
-    b.t(978,456,'is an Object',{size:24,f:'l',c:C.yel});
-    b.t(978,482,'… no limit',{size:22,f:'l',c:C.dim}).w(250);
-    b.p(cyl(185,568,70,52),C.chalk,2.8);
-    b.p(arrow(268,598,494,598,2,16),C.chalk,2.6).t(380,585,'instances',{size:24,a:'middle',f:'l'});
-    b.t(220,660,'taken from outside',{size:24,a:'middle',f:'l'});
-    b.t(220,688,'(e.g. a database)',{size:22,a:'middle',f:'l',c:C.dim});
-    b.t(220,730,'or embedded as data',{size:22,a:'middle',f:'l',c:C.dim}).w(250);
-    b.p(line(1090,280,1090,790,3),C.dim,2);
-    b.p(rect(1270,285,110,80),C.yel,3);
-    [305,325,345].forEach(y => b.p(line(1256,y,1268,y,.3),C.yel,2).p(line(1382,y,1394,y,.3),C.yel,2));
-    b.t(1325,336,'MKO',{size:30,a:'middle',c:C.yel,wt:700});
-    b.t(1325,397,'lives in memory',{size:24,a:'middle',f:'l'}).w(200);
-    b.p(arrow(1325,410,1325,468,1,16),C.chalk,2.8);
-    b.p(rect(1150,478,350,230),C.red,3.5);
-    b.p(poly([[1150,478],[1325,585],[1500,478]],false,1),C.red,3);
-    b.t(1325,628,'Resource',{size:34,a:'middle',c:C.red,wt:700});
-    b.t(1325,662,'ownership, permissions,',{size:24,a:'middle',f:'l'});
-    b.t(1325,690,'metadata',{size:24,a:'middle',f:'l'}).w(200);
-    b.t(1325,748,'addressed and acquired',{size:26,a:'middle',f:'l'});
-    b.t(1325,778,'in a Resource envelope',{size:26,a:'middle',f:'l',c:C.dim});
+
+    b.p(arrow(830,520,940,520,2,18),C.chalk,3);
+    b.t(1000,440,'Root schema',{size:40,c:C.yel,wt:700});
+    b.t(1000,500,'or',{size:31,f:'l',c:C.dim});
+    b.t(1000,560,'any attribute',{size:40,c:C.yel,wt:700});
+    b.t(1000,620,'or props',{size:40,c:C.cy,wt:700});
+    b.t(1000,685,'All are Obj nodes.',{size:32,f:'l'});
+    b.t(800,835,'The same building block is used at every level.',{size:37,a:'middle',f:'l',c:C.cy,wt:700});
+  },
+  b => {
+    head2(b,'Attributes build structure','Obj nodes can contain Obj nodes','nested attrs describe data at varying depths');
+
+    b.p(rect(130,350,280,95,2),C.yel,3);
+    b.t(270,410,'Person',{size:40,a:'middle',c:C.yel,wt:700});
+    b.p(line(410,397,490,397,1),C.chalk,2.5);
+    b.p(line(490,397,490,700,1),C.chalk,2.5);
+    [[470,'name'],[565,'address'],[660,'contacts']].forEach(([y,label]) => {
+      b.p(line(490,y,555,y,1),C.chalk,2.5);
+      b.t(575,y+10,label,{size:36,c:C.chalk,wt:700});
+    });
+    b.p(line(780,555,865,555,1),C.chalk,2.5);
+    b.p(line(865,515,865,600,1),C.chalk,2.5);
+    b.p(line(865,515,920,515,1),C.chalk,2.5);
+    b.p(line(865,600,920,600,1),C.chalk,2.5);
+    b.t(940,525,'street',{size:34,c:C.cy});
+    b.t(940,610,'city',{size:34,c:C.cy});
+    b.p(line(780,660,1110,660,1),C.chalk,2.5);
+    b.p(line(1110,620,1110,705,1),C.chalk,2.5);
+    b.p(line(1110,620,1165,620,1),C.chalk,2.5);
+    b.p(line(1110,705,1165,705,1),C.chalk,2.5);
+    b.t(1185,630,'email',{size:34,c:C.grn});
+    b.t(1185,715,'phone',{size:34,c:C.grn});
+    b.t(800,835,'A hierarchy of nodes and relationships: a tree.',{size:37,a:'middle',f:'l',c:C.cy,wt:700});
+  },
+  b => {
+    head2(b,'Props: information on the schema','properties at every level','props carry both a schema and associated values');
+
+    b.p(rect(125,330,650,425,2),C.yel,3);
+    const rows = [
+      [395,170,'Person','object props'],
+      [485,200,'name','attribute props'],
+      [575,200,'address','attribute props'],
+      [665,230,'city','nested attribute props'],
+    ];
+    rows.forEach(([y,x,label,annotation]) => {
+      b.t(x,y,label,{size:35,f:'l',c:C.chalk});
+      b.p(arrow(410,y-12,470,y-12,1,12),C.cy,2);
+      b.t(490,y,annotation,{size:28,f:'l',c:C.cy});
+    });
+
+    b.t(860,395,'Each props object has',{size:34,c:C.yel,wt:700});
+    b.t(860,455,'a structure + values',{size:38,c:C.cy,wt:700});
+    b.t(860,545,'Properties can guide behavior',{size:31,f:'l'});
+    b.t(860,590,'or interpretation of data.',{size:31,f:'l'});
+    b.t(860,675,'Their meaning depends on',{size:29,f:'l',c:C.dim});
+    b.t(860,715,'the component that reads them.',{size:29,f:'l',c:C.dim});
+    b.t(800,835,'Props belong to the schema, but carry values too.',{size:37,a:'middle',f:'l',c:C.cy,wt:700});
+  },
+  b => {
+    head2(b,'From schema to data','structure, properties and values','serialization is a representation, not the model');
+
+    b.p(rect(120,365,380,250,2),C.yel,3.5);
+    b.t(310,425,'Obj',{size:48,a:'middle',c:C.yel,wt:700});
+    b.t(310,485,'structure + props',{size:31,a:'middle',f:'l'});
+    b.t(310,550,'the shared schema',{size:28,a:'middle',f:'l',c:C.dim});
+    b.p(arrow(525,490,645,490,2,18),C.chalk,3);
+    b.p(rect(670,325,380,155,2),C.cy,3);
+    b.t(860,385,'OValue',{size:40,a:'middle',c:C.cy,wt:700});
+    b.t(860,435,'one instance',{size:30,a:'middle',f:'l'});
+    b.p(rect(670,525,380,155,2),C.grn,3);
+    b.t(860,585,'OVList',{size:40,a:'middle',c:C.grn,wt:700});
+    b.t(860,635,'many instances',{size:30,a:'middle',f:'l'});
+    b.p(arrow(1075,490,1190,490,2,18),C.chalk,3);
+    b.p(rect(1215,365,270,250,2),C.chalk,3);
+    b.t(1350,425,'JSON',{size:40,a:'middle',wt:700});
+    b.t(1350,485,'or',{size:28,a:'middle',f:'l',c:C.dim});
+    b.t(1350,545,'YAML',{size:40,a:'middle',wt:700});
+    b.t(1350,590,'shared serialization',{size:24,a:'middle',f:'l',c:C.dim});
+    b.t(800,815,'The model describes the data; serialization represents it for exchange.',{size:34,a:'middle',f:'l',c:C.cy,wt:700});
+  },
+  b => {
+    head2(b,'Serialization','every Mikup Object can be represented as a string','the same data, different textual representations');
+
+    const panel = (x, width, title, lines, size = 20, spacing = 30, highlight = false) => {
+      b.p(rect(x,310,width,490,2),highlight ? C.org : C.chalk,highlight ? 4 : 2.5,{blink:highlight});
+      b.t(x+20,355,title,{size:36,c:C.yel,wt:700});
+      lines.forEach(([text, color], i) => {
+        const indent = text.length - text.trimStart().length;
+        const content = text.trimStart();
+        const key = title === 'JSON Document' && content.match(/^"(?:name|surname|birthday|height)"/);
+        const tx = x+20+indent*6, y = 390+i*spacing;
+        if(key){
+          b.t(tx,y,key[0],{size,f:'m',wt:600,c:C.cy});
+          b.t(tx+meas(key[0],size,'m',600),y,content.slice(key[0].length),{size,f:'m',wt:600,c:C.chalk});
+        } else {
+          b.t(tx,y,content,{size,f:'m',wt:600,c:color || C.chalk});
+        }
+      });
+      b.w(150);
+    };
+    panel(45,400,'CSV',[
+      ['name,surname,birthday,height',C.cy],
+      ['Mario,Rossi,1985-05-12,178'],
+      ['Giulia,Bianchi,1990-11-30,165'],
+      ['Luca,Verdi,1978-03-22,182'],
+    ]);
+    panel(485,430,'JSON Document',[
+      ['['],
+      ['  {'],
+      ['    "name": "Mario",'],
+      ['    "surname": "Rossi",'],
+      ['    "birthday": "1985-05-12",'],
+      ['    "height": 178'],
+      ['  },'],
+      ['  {'],
+      ['    "name": "Giulia",'],
+      ['    "surname": "Bianchi",'],
+      ['    "birthday": "1990-11-30",'],
+      ['    "height": 165'],
+      ['  },'],
+      ['  {'],
+      ['    "name": "Luca",'],
+      ['    "surname": "Verdi",'],
+      ['    "birthday": "1978-03-22",'],
+      ['    "height": 182'],
+      ['  }'],
+      [']'],
+    ],20,20);
+    panel(955,600,'Mikup ( JSON )',[
+      ['{'],
+      ['  "name": "person",',C.cy],
+      ['  "attrs": [',C.cy],
+      ['    { "name": "name" },',C.cy],
+      ['    { "name": "surname" },',C.cy],
+      ['    { "name": "birthday", "type": "Date" },',C.cy],
+      ['    { "name": "height", "type": "Integer" }',C.cy],
+      ['  ],',C.cy],
+      ['  "values": [',C.grn],
+      ['    ["Mario", "Rossi", "1985-05-12", 178],',C.grn],
+      ['    ["Giulia", "Bianchi", "1990-11-30", 165],',C.grn],
+      ['    ["Luca", "Verdi", "1978-03-22", 182]',C.grn],
+      ['  ]',C.grn],
+      ['}'],
+    ],21,22,true);
+    b.t(800,835,'One text representation carries the schema and its values.',{size:36,a:'middle',f:'l',c:C.cy,wt:700});
   },
 ];
 
 return {
-  id: 'ep_02',
+  id: 'objects',
   title: 'MKO, the Mikup Object',
-  scenes: [{ id: 'ep_02/mko-the-mikup-object', title: 'MKO, the Mikup Object', render: scenes[0] }],
+  scenes: [
+    { id: 'objects/node', title: 'Obj: the building block', render: scenes[1] },
+    { id: 'objects/structure', title: 'Attributes build structure', render: scenes[2] },
+    { id: 'objects/properties', title: 'Props: information on the schema', render: scenes[3] },
+    { id: 'objects/values-and-serialization', title: 'From schema to data', render: scenes[4] },
+    { id: 'objects/oop-comparison', title: 'A comparison between MKO and OOP', render: scenes[0] },
+    { id: 'objects/string-serialization', title: 'Every Mikup Object as a string', render: scenes[5] },
+  ],
 };
 
 })();
@@ -1052,7 +1197,10 @@ async function playOp(op, grp, g){
     const el = document.createElementNS(NS,'path');
     el.setAttribute('d',op.d); el.setAttribute('stroke',op.c); el.setAttribute('stroke-width',op.w);
     grp.appendChild(el);
-    if(drawMode==='none') return true;
+    if(drawMode==='none'){
+      if(op.blink) el.classList.add('blink-border');
+      return true;
+    }
     const L = el.getTotalLength();
     el.style.strokeDasharray = `${L} ${L+4}`; el.style.strokeDashoffset = L;
     showPencil(true);
@@ -1060,7 +1208,10 @@ async function playOp(op, grp, g){
       el.style.strokeDashoffset = L*(1-p);
       const pt = el.getPointAtLength(L*p); movePencil(pt.x, pt.y);
     });
-    if(ok) el.style.strokeDasharray = 'none';
+    if(ok){
+      el.style.strokeDasharray = 'none';
+      if(op.blink) el.classList.add('blink-border');
+    }
     return ok;
   }
   if(op.k==='t'){
@@ -1230,6 +1381,28 @@ holdIn.addEventListener('change', () => { holdIn.value = extraHold; });
 stage.addEventListener('mousemove', e => onPointer(e.clientY), {passive:true});
 stage.addEventListener('mouseleave', () => setBar(false));
 stage.addEventListener('touchstart', e => { const t = e.touches[0]; if(t) onPointer(t.clientY); }, {passive:true});
+let swipe = null;
+stage.addEventListener('touchstart', e => {
+  if(!started || e.touches.length!==1 || e.target.closest('#bar, #start')){ swipe = null; return; }
+  const t = e.touches[0];
+  swipe = { id:t.identifier, x:t.clientX, y:t.clientY };
+}, {passive:true});
+stage.addEventListener('touchmove', e => {
+  if(e.touches.length!==1) swipe = null;
+}, {passive:true});
+stage.addEventListener('touchcancel', () => { swipe = null; }, {passive:true});
+stage.addEventListener('touchend', e => {
+  if(!swipe || e.touches.length){ swipe = null; return; }
+  const t = [...e.changedTouches].find(touch => touch.identifier===swipe.id);
+  if(t){
+    const dx = t.clientX-swipe.x, dy = t.clientY-swipe.y;
+    if(Math.abs(dx)>=60 && Math.abs(dx)>Math.abs(dy)*1.5){
+      const next = cur + (dx<0 ? 1 : -1);
+      if(next>=0 && next<ORDER.length) jump(next);
+    }
+  }
+  swipe = null;
+}, {passive:true});
 document.addEventListener('keydown', e => {
   if(e.target && e.target.name === 'draw' && e.key.startsWith('Arrow')) return;
   if(e.target && e.target.id === 'holdIn'){ if(e.key==='Enter' || e.key==='Escape') e.target.blur(); return; }

@@ -49,7 +49,10 @@ async function playOp(op, grp, g){
     const el = document.createElementNS(NS,'path');
     el.setAttribute('d',op.d); el.setAttribute('stroke',op.c); el.setAttribute('stroke-width',op.w);
     grp.appendChild(el);
-    if(drawMode==='none') return true;
+    if(drawMode==='none'){
+      if(op.blink) el.classList.add('blink-border');
+      return true;
+    }
     const L = el.getTotalLength();
     el.style.strokeDasharray = `${L} ${L+4}`; el.style.strokeDashoffset = L;
     showPencil(true);
@@ -57,7 +60,10 @@ async function playOp(op, grp, g){
       el.style.strokeDashoffset = L*(1-p);
       const pt = el.getPointAtLength(L*p); movePencil(pt.x, pt.y);
     });
-    if(ok) el.style.strokeDasharray = 'none';
+    if(ok){
+      el.style.strokeDasharray = 'none';
+      if(op.blink) el.classList.add('blink-border');
+    }
     return ok;
   }
   if(op.k==='t'){
@@ -227,6 +233,28 @@ holdIn.addEventListener('change', () => { holdIn.value = extraHold; });
 stage.addEventListener('mousemove', e => onPointer(e.clientY), {passive:true});
 stage.addEventListener('mouseleave', () => setBar(false));
 stage.addEventListener('touchstart', e => { const t = e.touches[0]; if(t) onPointer(t.clientY); }, {passive:true});
+let swipe = null;
+stage.addEventListener('touchstart', e => {
+  if(!started || e.touches.length!==1 || e.target.closest('#bar, #start')){ swipe = null; return; }
+  const t = e.touches[0];
+  swipe = { id:t.identifier, x:t.clientX, y:t.clientY };
+}, {passive:true});
+stage.addEventListener('touchmove', e => {
+  if(e.touches.length!==1) swipe = null;
+}, {passive:true});
+stage.addEventListener('touchcancel', () => { swipe = null; }, {passive:true});
+stage.addEventListener('touchend', e => {
+  if(!swipe || e.touches.length){ swipe = null; return; }
+  const t = [...e.changedTouches].find(touch => touch.identifier===swipe.id);
+  if(t){
+    const dx = t.clientX-swipe.x, dy = t.clientY-swipe.y;
+    if(Math.abs(dx)>=60 && Math.abs(dx)>Math.abs(dy)*1.5){
+      const next = cur + (dx<0 ? 1 : -1);
+      if(next>=0 && next<ORDER.length) jump(next);
+    }
+  }
+  swipe = null;
+}, {passive:true});
 document.addEventListener('keydown', e => {
   if(e.target && e.target.name === 'draw' && e.key.startsWith('Arrow')) return;
   if(e.target && e.target.id === 'holdIn'){ if(e.key==='Enter' || e.key==='Escape') e.target.blur(); return; }

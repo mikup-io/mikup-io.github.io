@@ -1,5 +1,5 @@
 export const C = { chalk:'#ecebe6', dim:'#8f8e88', yel:'#f4d35e', cy:'#7fd3e6', red:'#ff7a6b', grn:'#9be38f', org:'#f5a35c' };
-export const FONT = { h:'Caveat, "Patrick Hand", cursive', l:'"Patrick Hand", Caveat, cursive' };
+export const FONT = { h:'Caveat, "Patrick Hand", cursive', l:'"Patrick Hand", Caveat, cursive', m:'"DejaVu Sans Mono", "Courier New", monospace' };
 const NS = 'http://www.w3.org/2000/svg';
 
 /* ---------- seeded randomness for the hand-drawn wobble ---------- */
@@ -77,7 +77,7 @@ export function B(){
   const ops=[];
   const b = {
     ops,
-    p(d,c=C.chalk,w=3){ (Array.isArray(d)?d:[d]).forEach(x => ops.push({k:'p',d:x,c,w})); return b; },
+    p(d,c=C.chalk,w=3,o={}){ (Array.isArray(d)?d:[d]).forEach(x => ops.push({k:'p',d:x,c,w,...o})); return b; },
     t(x,y,s,o={}){ ops.push({k:'t',x,y,s,...o}); return b; },
     w(ms){ ops.push({k:'w',ms}); return b; }
   };
